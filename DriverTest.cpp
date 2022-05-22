@@ -8,7 +8,7 @@ int main(){
     
 
     out.open("Tiny.txt");
-
+    
     is.open("Tiny.json");
     is >> s;
     
@@ -16,6 +16,10 @@ int main(){
     
     net.AddTransmitters(s["cells"]);
     net.AddRelations(s["cell_relations"]);
+
+    //test largest degree mk1
+
+    net.AssignFreq_mk2();
 
     out << net;
     out.close();
