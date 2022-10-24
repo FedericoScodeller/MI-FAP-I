@@ -1,368 +1,227 @@
-// file network.cpp
-
 #include "network.hpp"
 
-CellRelation::CellRelation(nlohmann::json relation){
-   cell_bonded=relation["to"];
-   
-   if(relation["handover"]==nlohmann::detail::value_t::null)
-      handover=false;
-   else
-      handover=true;
-   
-   if(relation["downlink_area_interference"]["same_channel"] == nlohmann::detail::value_t::null)
-      same_channel=0.0;
-   else
-      same_channel=relation["downlink_area_interference"]["same_channel"];
-
-   if(relation["downlink_area_interference"]["adjacent_channel"] == nlohmann::detail::value_t::null)
-      adjacent_channel=0.0;
-   else
-      adjacent_channel=relation["downlink_area_interference"]["adjacent_channel"];
-}
-
-std::ostream& operator<<(std::ostream& os, const CellRelation& r){
-   os << "cell bond: " << r.cell_bonded << std::endl;
-   if (r.handover)
-   {
-      os << "handover: true "<< std::endl;
-   }
-   else
-   {
-      os << "handover: false "<< std::endl;
-   }
-   os << "same_channel: " << r.same_channel << std::endl;
-   os << "adjacent_channel: " << r.adjacent_channel << std::endl;
-   return os;
-}
-
-Transmitter::Transmitter(nlohmann::json cell, transmitter_type channel,int n_freq, int offset){
-   
-   assigned_freq=-1;
-   id_cell = cell["id"];
-   site = cell["site"];
-   type = channel;
-   freq_cost.resize(n_freq,0.0);
-   
-   if (cell["blocked_channels"] != nlohmann::detail::value_t::null)
-   {
-      for (int i=0; i < cell["blocked_channels"].size();i++)
-      {
-         int j = cell["blocked_channels"][i]; //library create some problem without this 
-         freq_cost[j - offset]= -1.0;
-      }  
-   }
-}
-
-std::ostream& operator<<(std::ostream& os, const Transmitter& t){
-   os << "freq: " << t.assigned_freq << std::endl;
-   os << "id: " << t.id_cell << std::endl;
-   os << "site: " << t.site << std::endl;
-
-   if (t.type == transmitter_type::bcch)
-      os << "type: bcch" << std::endl;
-   else
-      os << "type: tch" << std::endl;
-   
-   os << "freq cost: [ ";
-   for (int i = 0; i < t.freq_cost.size(); i++)
-      os <<t.freq_cost[i] << " ";
-   os << "]" << std::endl;
-   for (int i = 0; i < t.relations.size(); i++)
-   {
-      os << t.relations[i] << std::endl;
-   }
-   os << std::endl;
-   return os;
-}
-
-Network::Network(nlohmann::json data){
-      
-      bcch_bcch = data["general_information"]["handover_separation"]["bcch->bcch"];
-      bcch_tch  = data["general_information"]["handover_separation"]["bcch->tch"];
-      tch_bcch  = data["general_information"]["handover_separation"]["tch->bcch"];
-      tch_tch   = data["general_information"]["handover_separation"]["tch->tch"];
-
-      
-      min_freq  = data["general_information"]["spectrum"]["min"];
-      max_freq  = data["general_information"]["spectrum"]["max"];
-
-      co_site_separetion = data["general_information"]["co_site_separation"];
-      co_cell_separetion = data["general_information"]["default_co_cell_separation"];
-}
-
-void Network::AddTransmitters(nlohmann::json cells){
-
-    for(int i = 0; i < cells.size(); i++){
-         //the first is always a bcch type
-         transmitters.push_back(Transmitter(cells[i] , transmitter_type::bcch , max_freq - min_freq + 1, min_freq));
-         //the others are tch type         
-         for(int j = 1; j < cells[i]["demand"] ; j++){
-            transmitters.push_back(Transmitter(cells[i] , transmitter_type::tch , max_freq - min_freq + 1, min_freq));
-         }
-      }
-
-}
-
-void Transmitter::AddRelation(nlohmann::json rel){
-   relations.push_back(CellRelation(rel));
-}
-
-void Network::AddRelations(nlohmann::json cell_rels){
-
-   for(int n = 0 ; n < cell_rels.size(); n++)
-      for(int i=0; i < transmitters.size(); i++)
-         if(transmitters[i].IdCell() == cell_rels[n]["from"])
-            transmitters[i].AddRelation(cell_rels[n]);
-
-}
-
-std::ostream& operator<<(std::ostream& os, const Network& N){
-   os << "bcch_bcch: " << N.bcch_bcch << std::endl;
-   os << "bcch_tch: "  << N.bcch_tch << std::endl;
-   os << "tch_bcch: "  << N.tch_bcch << std::endl;
-   os << "tch_tch: "   << N.tch_tch << std::endl;
-      
-   os << "range: ["<< N.min_freq << ";" << N.max_freq << "]" << std::endl;
-
-   os << "co_site_separetion:" << N.co_site_separetion << std::endl;
-   os << "co_cell_separetion:" << N.co_cell_separetion << std::endl;
-   os << std::endl;
-
-   for (int i = 0; i < N.transmitters.size(); i++)
-   {
-      os << N.transmitters[i] << std::endl;
-   }
-   return os;
-}
-
-/*void Network::AssignFreq_mk1(void)
+//NETWORK METOHD AND FRIEND FUNCTION
+Network::Network(nlohmann::json data)
 {
-      for (int n = 0; n < transmitters.size(); n++)
-      {
-         int freq_crit = -1; //funziona come un flag
-         int degree_freq_crit;
-         int degree_freq_i;
-         int freq_assigned;
-         
-         //ricerca critico
-         for (int i = 0; i < transmitters.size(); i++)
-         {
-            if (transmitters[i].AssignedFreq() == -1)
+    //GENERAL NETWORK INFORMATION
+
+    bcch_bcch = data["general_information"]["handover_separation"]["bcch->bcch"];
+    bcch_tch  = data["general_information"]["handover_separation"]["bcch->tch"];
+    tch_bcch  = data["general_information"]["handover_separation"]["tch->bcch"];
+    tch_tch   = data["general_information"]["handover_separation"]["tch->tch"];
+
+
+    min_freq  = data["general_information"]["spectrum"]["min"];
+    max_freq  = data["general_information"]["spectrum"]["max"];
+
+    co_site_separetion = data["general_information"]["co_site_separation"];
+    co_cell_separetion = data["general_information"]["default_co_cell_separation"];
+
+    if (data["general_information"]["globally_blocked_channels"] != nlohmann::detail::value_t::null)
+    {
+        for (nlohmann::basic_json<>::size_type i = 0; i < data["general_information"]["globally_blocked_channels"].size(); i++)
+        {
+            int j = data["general_information"]["globally_blocked_channels"] [i];
+            globally_blocked_channels.push_back(j);
+        }
+    }
+
+    //TRANSMITTER CREATION
+    for(nlohmann::basic_json<>::size_type i = 0; i < data["cells"].size(); i++)
+    {
+        //the first is always a bcch type
+        transmitters.push_back(Transmitter(data["cells"][i] , transmitter_type::bcch));
+        
+        //the others are tch type      
+        for(int j = 1; j < data["cells"][i]["demand"] ; j++)
+            transmitters.push_back(Transmitter(data["cells"][i] , transmitter_type::tch));
+    }
+    std::cout << "Tx vector created" << std::endl;
+    //CO_CELL & CO_SITE RELATION (questa primo ciclo serve per le relazioni co_sito e co_cella che non sono presenti in "cell relation" del file .json)
+    for (std::vector<Transmitter>::size_type i = 0; i < transmitters.size(); i++)
+    {
+        for (std::vector<Transmitter>::size_type j = 0; j < transmitters.size(); j++)
+        {
+            if (i!=j)
             {
-               degree_freq_i=transmitters[i].Degree();
-               
-               if (freq_crit == -1 || degree_freq_i > degree_freq_crit)
-               {
-                  freq_crit=i;
-                  degree_freq_crit=degree_freq_i;
-               }
+                if (transmitters[i].Cell()==transmitters[j].Cell())
+                {
+                    transmitters[i].UpdateRel(Relation(j,co_cell_separetion));
+                    transmitters[j].AddToRelation(i);
+                }
+                else if (transmitters[i].Site()==transmitters[j].Site())
+                {
+                    transmitters[i].UpdateRel(Relation(j,co_site_separetion));
+                    transmitters[j].AddToRelation(i);
+                }
             }
-         }
-         //freq assign
-         freq_assigned=transmitters[freq_crit].AssignFreq();
-         
-         //aggiorna freq
-         for (int i = 0; i < transmitters.size(); i++)
-         {
-            transmitters[i].UpdateFreqCost(freq_assigned, -1.0);
-         }
-      
-      }
-      
-}*/
-
-int Network::LargestDegree(void)
-{
-   int crit_tran = -1; //il -1 funziona come un flag
-   int degree_crit_tran;
-   int i_degree;
-   
-   
-   //ricerca critico
-   for (int i = 0; i < transmitters.size(); i++)
-   {
-      if (transmitters[i].AssignedFreq() == -1) //eseguo il controllo solo su transmettitori che non hanno una freq
-      {
-         i_degree=transmitters[i].Degree();
-         
-         if (crit_tran == -1 || i_degree > degree_crit_tran) //se non ho inizializzato il transmettitore critico o trovo uno con degree maggiore
-         {
-            crit_tran=i;
-            degree_crit_tran=i_degree;
-         }
-      }
-   }
-
-   //mi serve un errore nel caso non riesca a trovare nessun trasmettitore critico o posso solo restituire -1 e mettere controlli dopo la funzione
-
-   return crit_tran;
-}
-
-int Transmitter::Degree(void)
-{
-   int degree = 0;
-   for (int i = 0; i < freq_cost.size(); i++)
-   {
-      if (freq_cost[i] < 0.0)
-      {
-         degree++;
-      }
-   }
-   return degree;
-}
-
-void Transmitter::AssignFreq(void)
-{
-   //rimane -1 in caso di fallimento
-   //non servono return poichè è un valore sempre disponibile
-   for (int i = 0; i < freq_cost.size(); i++)
-   {
-      if (freq_cost[i] >= 0.0 && (assigned_freq == -1 || (assigned_freq != -1 && freq_cost[i] < freq_cost [assigned_freq])))
-      {   
-         assigned_freq=i;
-      }
-   }
-   
-   if (assigned_freq == -1)//entro in questo loop solo se non ho positivi
-   {
-      for (int i = 0; i < freq_cost.size(); i++)
-      {
-         if (assigned_freq == -1 || freq_cost[i] > freq_cost [assigned_freq])
-         {
-            assigned_freq=i;
-         }
-      }
-   }
-}
-
-
-void Network::AssignFreq_mk2(void) //devo mettere dei controlli non ho protezioni da errori
-{
-   int crit_transmitter, assigned_freq;
-   for (int i = 0; i < transmitters.size(); i++)
-   {
-      crit_transmitter = (*this).LargestDegree();
-      transmitters[crit_transmitter].AssignFreq();
-      (*this).UpdateCost(crit_transmitter,transmitters[crit_transmitter].AssignedFreq());
-   }
-}
-
-void Network::UpdateCost(int changed_transmitter, int changed_freq)
-{
-   int r;
-   int handover_cost;
-
-   for (int i = 0; i < transmitters.size(); i++)
-   {
-      r = transmitters[changed_transmitter].FindRelation(transmitters[i].IdCell());
-      if (i != changed_transmitter)
-      {
-      
-         //co_cell imply co_site and co_cell has a stronger separetion anyways
-         if (transmitters[changed_transmitter].IdCell()==transmitters[i].IdCell())
-         {
-            //This for cycle is used many times, do I made it in to a function?
-            for (int j = changed_freq - co_cell_separetion; j <= changed_freq + co_cell_separetion ; j++)
+        } 
+    }
+    std::cout << "co_site and co_cell relation created" << std::endl;
+    //CELL RELATION FROM JSON
+    for (nlohmann::basic_json<>::size_type n = 0; n < data["cell_relations"].size(); n++)
+    {
+        for (std::vector<Transmitter>::size_type i = 0; i < transmitters.size(); i++)
+        {
+            for (std::vector<Transmitter>::size_type j = 0; j < transmitters.size(); j++)
             {
-               if (j >= 0 && j < (*this).NFreqAvailable()) //to avoid segmentation fault
-               {
-                  transmitters[i].UpdateFreqCost(j,-1.0);
-               }
-               
+                if (transmitters[i].Cell() == data["cell_relations"][n]["to"] && transmitters[j].Cell() == data["cell_relations"][n]["from"])
+                {
+                    transmitters[i].UpdateRel(Relation(data["cell_relations"][n], j, (*this).HandoverCost(transmitters[j],transmitters[i])));
+                    if(!(transmitters[j].InToRelation(i)))
+                       transmitters[j].AddToRelation(i); 
+                }
             }
-            
-         }
-         else if (transmitters[changed_transmitter].Site()==transmitters[i].Site())
-         {
-            for (int j = changed_freq - co_site_separetion; j <= changed_freq + co_site_separetion ; j++)
-            {
-               if (j >= 0 && j < (*this).NFreqAvailable())
-               {
-                  transmitters[i].UpdateFreqCost(j,-1.0);
-               }
-            }
-         }
-         else if(r != -1)
-         {
-            
-            if(transmitters[changed_transmitter].Handover(r))
-            {
-               //selezionare il tipo di relazione
-               if (transmitters[changed_transmitter].Type() == transmitter_type::bcch && transmitters[i].Type() == transmitter_type::bcch)
-               {
-                  handover_cost=bcch_bcch;
-               }
-               else if (transmitters[changed_transmitter].Type() == transmitter_type::bcch && transmitters[i].Type() == transmitter_type::tch)
-               {
-                  handover_cost=bcch_tch;
-               }
-               else if (transmitters[changed_transmitter].Type() == transmitter_type::tch && transmitters[i].Type() == transmitter_type::bcch)
-               {
-                  handover_cost=tch_bcch;
-               }
-               else if (transmitters[changed_transmitter].Type() == transmitter_type::tch && transmitters[i].Type() == transmitter_type::tch)
-               {
-                  handover_cost=tch_tch;
-               }
-               else
-               {
-                  std::cout << "Error handover cost" << std::endl;
-               }
-               
-               //usare il ciclo per update cost
-               for (int j = changed_freq - handover_cost; j <= changed_freq + handover_cost ; j++)
-               {
-                  if (j >= 0 && j < (*this).NFreqAvailable())
-                  {
-                     transmitters[i].UpdateFreqCost(j,-1.0);
-                  }
-               }
-
-            }
-            /*else 
-            {
-               if (transmitters[changed_transmitter].SameChannel(r) != 0.0)
-               {
-                  transmitters[i].UpdateFreqCost(changed_freq,transmitters[changed_transmitter].SameChannel(r));
-               }
-
-               if (transmitters[changed_transmitter].AdjacentChannel(r) != 0.0 && (changed_freq - 1 >= 0) )
-               {
-                  transmitters[i].UpdateFreqCost(changed_freq - 1,transmitters[changed_transmitter].AdjacentChannel(r));
-               }
-
-               if (transmitters[changed_transmitter].AdjacentChannel(r) != 0.0 && (changed_freq + 1 < (*this).NFreqAvailable()) )
-               {
-                  transmitters[i].UpdateFreqCost(changed_freq + 1,transmitters[changed_transmitter].AdjacentChannel(r));
-               }
-            }*/
-         }
-      }
-   }
+        }
+        std::cout << n+1<<"/"<< data["cell_relations"].size() << " cell relation done"<< std::endl; 
+    }  
+    std::cout << "relation from .json created" << std::endl;
+      
 }
-int Transmitter::FindRelation(std::string id)
+
+
+int Network::HandoverCost(Transmitter from, Transmitter to)
 {
-   for (int i = 0; i < relations.size(); i++)
-   {
-      if (id == relations[i].CellId())
-      {
-         return i;
-      }
-   }
-   return -1;
+    /*sono necesserie si informazioni da entrambe le celle che non vengono salvate nel vettore
+    relazioni dei trasmettitori, questo perchè in molte funzioni simili servono varie informazioni
+    da entrambi i transmettitori, forse usare un puntatore in cell relation potrebbe essere una soluzione migliore?*/
+    if (from.Type()==transmitter_type::bcch)
+    {
+        if (to.Type()==transmitter_type::bcch)
+        {
+            return (*this).bcch_bcch;
+        }
+        else
+        {
+            return (*this).bcch_tch;
+        }
+    }
+    else
+    {
+        if (to.Type()==transmitter_type::bcch)
+        {
+            return (*this).tch_bcch;
+        }
+        else
+        {
+            return (*this).tch_tch;
+        }
+    }  
 }
 
-void Transmitter::UpdateFreqCost(int freq, double cost)
+
+void Network::Greedy(void)
 {
-   if (freq_cost[freq] < 0 || cost < 0)
-   {
-      freq_cost[freq] = -abs(freq_cost[freq])-abs(cost);
-   }
-   else
-   {
-      freq_cost[freq] += abs(cost);
-   }
+    /*primo algoritmo di assegnazione della freq, gli algoritmi greedy che ho studiato ho visto che
+    non hanno uno specifico criterio per la scelta del ordine su chi servire prima ho quindi usato
+    l'ordine in cui sono salvati ma se non è l'unica scelta e ce ne sono di migliori posso cambiarlo*/
+    int f_best,f_n,n; 
+    //la freq f_n è la freq assegnata ai trasmettitori che causano interferenza  
+    double f_best_cost, f_cost;
+    for (std::vector<Transmitter>::size_type t = 0; t < (*this).transmitters.size(); t++)
+    {
+        f_best=-1; //uso -1 come 'flag' per i valori non inizializzalizati
+
+        for (int f=(*this).min_freq; f <= (*this).max_freq; f++)
+        {
+            f_cost=0.0;
+
+            if (!((std::count((*this).globally_blocked_channels.begin(), (*this).globally_blocked_channels.end(), f))
+                && (*this).transmitters[t].BlockedFreq(f)))
+            /*entro nel ciclo di valutazione solo se f (la freq correntemente valutata) non è una freq bloccata
+            globalmente o localmeente dal tx*/
+            {
+                for (std::vector<Relation>::size_type r = 0; r < (*this).transmitters[t].FromSize(); r++)
+                {
+                    n=(*this).transmitters[t].TxFrom(r);
+                    f_n=(*this).transmitters[n].Freq();
+                    f_cost+=(*this).transmitters[t].CostFreq(n,f_n,f);
+                }
+
+                for (std::vector<Relation>::size_type r = 0; r < (*this).transmitters[t].ToSize(); r++)
+                {
+                    /*questo secondo ciclo è per valutare modifiche di costo ai trasmettitori in cui
+                    il tx corrente causa interferenza (infatti gli argomanti sono speculari) questo perchè ho tenuto conto delle assimetrie sia
+                    nella presenza che intensita delle interferenze*/
+                    n=(*this).transmitters[t].TxTo(r);
+                    f_n=(*this).transmitters[n].Freq();
+                    f_cost+=(*this).transmitters[n].CostFreq(t,f,f_n);
+                }
+
+                if (f_best == -1 || f_best_cost > f_cost)
+                {
+                    /*aggiorno ho trovato un nuovo minimo o ho un valore valido per inizializzare*/
+                    f_best=f;
+                    f_best_cost=f_cost;
+                }
+            }   
+        }
+        (*this).AssignFreq(t,f_best);
+        std::cout << t+1<<"/"<< (*this).transmitters.size() << " freq assigned"<< std::endl;        
+    }
+    
 }
 
+
+void Network::AssignFreq(int tx, int freq)
+{
+    /*è usato solo per un controllo d'errore, in effettti poteva stare direttamente in greedy ma
+    così può essere riusato e modificato per maggiori controlli d'errore*/
+    if (freq==-1)
+        std::cout <<"è stato impossibile assegnare una freq al tx: "<< tx << std::endl;
+    
+    (*this).transmitters[tx].AssignFreq(freq);
+    
+}
+
+
+double Network::TotInterference(void)
+{
+    double cost=0.0;
+    int n,f,f_n;
+    for (std::vector<Transmitter>::size_type t = 0; t < (*this).transmitters.size(); t++)
+    {
+        for (std::vector<Relation>::size_type r = 0; r < (*this).transmitters[t].FromSize(); r++)
+        {
+            /*qui il conto è eseguito solo una volta, calcolo la totale interferenza per una cella
+            e poi sommo le totali interferenze in tutto il sistema*/
+            n=(*this).transmitters[t].TxFrom(r);
+            f=(*this).transmitters[t].Freq();
+            f_n=(*this).transmitters[n].Freq();
+            cost+=(*this).transmitters[t].CostFreq(n,f_n,f);
+        }
+    }
+    return cost;
+}
+
+
+std::ostream& operator<<(std::ostream& os, const Network& N)
+{
+    /*non usare se non se si vuole per esteso ogni singolo dettaglio per motivi di debug,
+    gia col caso tiny.json è un disatro di informazioni ed ha solo 12 tx, negli altri casi
+    dei controlli è praticamente impossible*/
+
+    os << "bcch_bcch: " << N.bcch_bcch << std::endl;
+    os << "bcch_tch: "  << N.bcch_tch << std::endl;
+    os << "tch_bcch: "  << N.tch_bcch << std::endl;
+    os << "tch_tch: "   << N.tch_tch << std::endl;
+
+    os << "range: ["<< N.min_freq << ";" << N.max_freq << "]" << std::endl;
+
+    os << "co_site_separetion:" << N.co_site_separetion << std::endl;
+    os << "co_cell_separetion:" << N.co_cell_separetion << std::endl;
+    os << std::endl;
+
+    os << "globally_blocked_channels: [";
+    for (std::vector<Transmitter>::size_type i = 0; i < N.globally_blocked_channels.size(); i++)
+        os << N.globally_blocked_channels[i]<< ", ";
+    os << "]" << std::endl << std::endl << std::endl;
+
+    for (std::vector<Transmitter>::size_type i = 0; i < N.transmitters.size(); i++)
+    {
+        os << "Tx: " << i << std::endl;
+        os << N.transmitters[i] << std::endl;
+    }
+    return os;
+}
 
