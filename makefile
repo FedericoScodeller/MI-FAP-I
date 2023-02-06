@@ -1,18 +1,21 @@
 OPTIONS = -Wall -Wfatal-errors -std=c++17 -O3
 
-test.exe: Greedy_test.o network.o transmitter.o relation.o
-	g++ -o test.exe Greedy_test.o network.o transmitter.o relation.o
+test_dsatur.exe: DSatur_test.o network.o transmitter.o 
+	g++ -o test_dsatur.exe DSatur_test.o network.o transmitter.o 
 
-Greedy_test.o: Greedy_test.cpp network.hpp transmitter.hpp relation.hpp json.hpp
+test_greedy.exe: Greedy_test.o network.o transmitter.o 
+	g++ -o test_greedy.exe Greedy_test.o network.o transmitter.o 
+
+DSatur_test.o: DSatur_test.cpp network.hpp transmitter.hpp json.hpp
+	g++ -c $(OPTIONS) DSatur_test.cpp
+
+Greedy_test.o: Greedy_test.cpp network.hpp transmitter.hpp json.hpp
 	g++ -c $(OPTIONS) Greedy_test.cpp
 
-relation.o: relation.cpp relation.hpp json.hpp
-	g++ -c $(OPTIONS) relation.cpp
-	
-transmitter.o: transmitter.cpp transmitter.hpp relation.hpp json.hpp
+transmitter.o: transmitter.cpp transmitter.hpp json.hpp
 	g++ -c $(OPTIONS) transmitter.cpp
 
-network.o: network.cpp network.hpp transmitter.hpp relation.hpp json.hpp
+network.o: network.cpp network.hpp transmitter.hpp json.hpp
 	g++ -c $(OPTIONS) network.cpp
 
 clean:
