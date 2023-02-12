@@ -42,14 +42,17 @@ private:
     std::vector<std::vector<float>> same;
 
     std::vector<std::vector<int>> FindTx(std::string from,std::string to);
-    int MaxSaturation(void);
+    int HandoverCost(int from, int to);
+    struct FreqCost FreqCost(int tx, int freq); 
+    void AssignFreq(int tx);
+    int Degree(int transmettitore);
+    int Saturation(int transmettitore);
+    int LargestDegree(void);
+    int DSatur(void);
 
 public:
 
     Network(nlohmann::json data);
-    int HandoverCost(int from, int to);
-    void Greedy(void);
-    void DSatur(void);
-    struct FreqCost FreqCost(int tx, int freq); 
+    void MiFap(std::string algoritmo);
 };
 #endif

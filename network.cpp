@@ -110,7 +110,6 @@ Network::Network(nlohmann::json data)
     }
 }
 
-
 std::vector<std::vector<int>> Network::FindTx(std::string from,std::string to)
 {
     std::vector<std::vector<int>> position(2,std::vector<int>());
@@ -154,116 +153,6 @@ int Network::HandoverCost(int from, int to)
     }  
 }
 
-void Network::Greedy(void)
-{
-    struct FreqCost best_cost, f_cost;
-    int f_best;
-    for (std::vector<Transmitter>::size_type t = 0; t < (*this).transmitters.size(); t++)
-    {
-        f_best=-1; //uso -1 come 'flag' per i valori non inizializzalizati
-        best_cost.hard_link = 0;
-        best_cost.interference = 0.0;
-
-        //assegnazione freq
-        for (int f=(*this).min_freq; f <= (*this).max_freq; f++)
-        {
-            //entro nel ciclo di valutazione solo se f (la freq correntemente valutata) non è una freq bloccata
-            //globalmente o localmente 
-            if (!((std::count((*this).globally_blocked_channels.begin(), (*this).globally_blocked_channels.end(), f))
-                && (*this).transmitters[t].BlockedFreq(f)))
-            {
-                f_cost=(*this).FreqCost(t,f);
-
-                if (f_best == -1 || best_cost.hard_link > f_cost.hard_link ||(best_cost.hard_link == f_cost.hard_link && best_cost.interference > f_cost.interference))
-                {
-                    //aggiorno: ho trovato un nuovo minimo o ho un valore valido per inizializzare
-                    f_best=f;
-                    best_cost=f_cost;
-                }
-            }   
-        }
-        (*this).transmitters[t].AssignFreq(f_best);
-    }
-}
-
-void Network::DSatur(void)
-{
-    struct FreqCost best_cost, f_cost;
-    int f_best,t;
-    for (std::vector<Transmitter>::size_type count = 0; count < (*this).transmitters.size(); count++)
-    {
-        f_best=-1; //uso -1 come 'flag' per i valori non inizializzalizati
-        best_cost.hard_link = 0;
-        best_cost.interference = 0.0;
-
-        t=(*this).MaxSaturation();
-        
-        //assegnazione freq
-        for (int f=(*this).min_freq; f <= (*this).max_freq; f++)
-        {
-            //entro nel ciclo di valutazione solo se f (la freq correntemente valutata) non è una freq bloccata
-            //globalmente o localmente 
-            if (!((std::count((*this).globally_blocked_channels.begin(), (*this).globally_blocked_channels.end(), f))
-                && (*this).transmitters[t].BlockedFreq(f)))
-            {
-                f_cost=(*this).FreqCost(t,f);
-
-                if (f_best == -1 || best_cost.hard_link > f_cost.hard_link ||(best_cost.hard_link == f_cost.hard_link && best_cost.interference > f_cost.interference))
-                {
-                    //aggiorno: ho trovato un nuovo minimo o ho un valore valido per inizializzare
-                    f_best=f;
-                    best_cost=f_cost;
-                }
-            }   
-        }
-        (*this).transmitters[t].AssignFreq(f_best);
-    }
-    
-}
-
-int Network::MaxSaturation(void)
-{
-    int tx_max_sat = -1;
-    int sat=0, max_sat=0, degree=0, max_degree=0, val_degree=0, max_val_degree=0;
-    // sat: saturazione, degree: numero vicini non colorati, val_degree: "valore/intensità" degli hard link
-    for (std::vector<Transmitter>::size_type i = 0; i < (*this).transmitters.size(); i++)
-    {
-        if ((*this).transmitters[i].Freq() == -1)
-        {
-            sat=0;
-            degree=0;
-            val_degree=0;
-
-            for (std::vector<Transmitter>::size_type j = 0; j < (*this).transmitters.size(); j++)
-            {
-                if ((*this).separetion[i][j] > 0)
-                {
-                    if ((*this).transmitters[j].Freq() != -1)
-                    {
-                        sat++;
-                    }
-                    else
-                    {
-                        degree++;
-                        val_degree += (*this).separetion[i][j];
-                    }
-                }
-            }
-
-            if (tx_max_sat == -1 || sat > max_sat || (sat == max_sat && degree > max_degree) || 
-                (sat == max_sat && degree == max_degree && val_degree > max_val_degree) )
-                //COME DEGREE CONSIDERO IL NUMERO DI VICINI NON COLORATI, LA QUANTITA DI SEPAREAZIONE VOLUTA O COSI COME HO FATTO
-            {
-                tx_max_sat=i;
-                max_sat=sat;
-                max_degree=degree;
-                max_val_degree=val_degree;
-            }
-        }
-    }
-    return tx_max_sat;
-}
-
 struct FreqCost Network::FreqCost(int tx, int freq)
 {
     struct FreqCost cost;
@@ -288,35 +177,173 @@ struct FreqCost Network::FreqCost(int tx, int freq)
     return cost;
 }
 
-//riscrivere per stampare solo i costi di dove ha interferenza e infrazioni
+void Network::AssignFreq(int tx)
+{
+    struct FreqCost best_cost, f_cost;
+    int f_best=-1; 
+    best_cost.hard_link = 0;
+    best_cost.interference = 0.0;
+
+    //assegnazione freq
+    for (int f=(*this).min_freq; f <= (*this).max_freq; f++)
+    {
+        //entro nel ciclo di valutazione solo se f (la freq correntemente valutata) non è una freq bloccata
+        //globalmente o localmente 
+        if (!((std::count((*this).globally_blocked_channels.begin(), (*this).globally_blocked_channels.end(), f))
+            && (*this).transmitters[tx].BlockedFreq(f)))
+        {
+            f_cost=(*this).FreqCost(tx,f);
+
+            if (f_best == -1 || best_cost.hard_link > f_cost.hard_link ||(best_cost.hard_link == f_cost.hard_link && best_cost.interference > f_cost.interference))
+            {
+                //aggiorno: ho trovato un nuovo minimo o ho un valore valido per inizializzare
+                f_best=f;
+                best_cost=f_cost;
+            }
+        }   
+    }
+    (*this).transmitters[tx].AssignFreq(f_best);
+    return;
+}
+
+int Network::Degree(int transmettitore)
+{
+    int degree=0;
+
+    for (std::vector<Transmitter>::size_type n = 0; n < (*this).transmitters.size(); n++)
+    {
+        degree+=(*this).separetion[transmettitore][n];
+    }
+
+    return degree;
+}
+
+int Network::Saturation(int transmettitore)
+{
+    std::vector<bool> frequenze_occupate((*this).max_freq - (*this).min_freq + 1, false);
+    int indice,freq_vicino, separazione;
+
+    //frequenze bloccate globalmente
+    for (std::vector<int>::size_type i = 0; i < (*this).globally_blocked_channels.size(); i++)
+    {
+        indice=(*this).globally_blocked_channels[i]-(*this).min_freq;
+        frequenze_occupate[indice]= true;
+    }
+
+    //frequenze bloccate localmente dal trasnmettitore
+    for (int freq = (*this).min_freq; freq <= (*this).max_freq; freq++)
+    {
+        indice=freq-(*this).min_freq;
+        if ((*this).transmitters[transmettitore].BlockedFreq(freq))
+        {
+            frequenze_occupate[indice]=true;
+        }
+    }
+    
+    //frequenze bloccate dai vicini
+    for (std::vector<Transmitter>::size_type vicino = 0; vicino < (*this).transmitters.size(); vicino++)
+    {
+        freq_vicino = (*this).transmitters[vicino].Freq();
+        separazione = (*this).separetion[transmettitore][vicino];
+        if (separazione > 0 && freq_vicino != -1)
+        {
+            for (indice = (freq_vicino - separazione + 1 - (*this).min_freq); indice <= (freq_vicino + separazione - 1 - (*this).min_freq); indice++)
+            {
+                if (indice >= 0 && indice <= ((*this).max_freq - (*this).min_freq))
+                {
+                    frequenze_occupate[indice]=true;
+                }
+                
+            }
+        }       
+    }
+    return std::count(frequenze_occupate.begin(), frequenze_occupate.end(), true);
+}
+
+int Network::LargestDegree(void)
+{
+    int degree, largest_degree = 0, transmettitore_largest_degree = -1;
+    
+    for (std::vector<Transmitter>::size_type transmitter = 0; transmitter < (*this).transmitters.size(); transmitter++)
+    {
+        if ((*this).transmitters[transmitter].Freq() == -1)
+        {
+            degree=(*this).Degree(transmitter);
+
+            if (transmettitore_largest_degree == -1 ||  degree > largest_degree )
+            {
+                transmettitore_largest_degree = transmitter;
+                largest_degree = degree;
+            }
+        }
+    }
+    return transmettitore_largest_degree;
+}
+
+int Network::DSatur(void)
+{
+    int dsatur, degree, largest_dsatur = 0, largest_degree = 0, transmettitore_largest_dsatur = -1;
+
+    for (std::vector<Transmitter>::size_type transmitter = 0; transmitter < (*this).transmitters.size(); transmitter++)
+    {
+        if ((*this).transmitters[transmitter].Freq() == -1)
+        {
+            dsatur=(*this).Saturation(transmitter);
+            degree=(*this).Degree(transmitter);
+
+            if (transmettitore_largest_dsatur == -1 || dsatur > largest_dsatur || (dsatur == largest_dsatur && degree > largest_degree))
+            {
+                transmettitore_largest_dsatur = transmitter;
+                largest_dsatur = dsatur;
+                largest_degree = degree;
+            }
+        }
+    }
+    return transmettitore_largest_dsatur;
+}
+
+void Network::MiFap(std::string algoritmo)
+{
+    int transmitter;
+    if (algoritmo == "Greedy")
+    {
+        for (std::vector<Transmitter>::size_type transmitter = 0; transmitter < (*this).transmitters.size(); transmitter++)
+        {
+            (*this).AssignFreq(transmitter);
+        }
+    }
+    else if (algoritmo == "LargestDegree")
+    {
+        transmitter = (*this).LargestDegree();
+        while (transmitter != -1)
+        {
+            (*this).AssignFreq(transmitter);
+            transmitter = (*this).LargestDegree();
+        }
+    }
+    else if (algoritmo == "DSatur")
+    {
+        transmitter = (*this).DSatur();
+        while (transmitter != -1)
+        {
+            (*this).AssignFreq(transmitter);
+            transmitter = (*this).DSatur();
+        }
+    }
+    else
+    {
+        std::cout<<"algoritmo sconoscuto"<<std::endl;
+        exit(EXIT_FAILURE);
+    }
+    
+    
+    return;
+}
+
 std::ostream& operator<<(std::ostream& os, const Network& N)
 {
 
     struct FreqCost tot_cost;
-    
-
-    os << "bcch_bcch: " << N.bcch_bcch << std::endl;
-    os << "bcch_tch: "  << N.bcch_tch << std::endl;
-    os << "tch_bcch: "  << N.tch_bcch << std::endl;
-    os << "tch_tch: "   << N.tch_tch << std::endl;
-
-    os << "range: ["<< N.min_freq << ";" << N.max_freq << "]" << std::endl;
-
-    os << "co_site_separetion:" << N.co_site_separetion << std::endl;
-    os << "co_cell_separetion:" << N.co_cell_separetion << std::endl;
-    os << std::endl;
-
-    os << "globally_blocked_channels: [";
-    for (std::vector<Transmitter>::size_type i = 0; i < N.globally_blocked_channels.size(); i++)
-        os << N.globally_blocked_channels[i]<< ", ";
-    os << "]" << std::endl << std::endl << std::endl;
-
-
-    for (std::vector<Transmitter>::size_type i = 0; i < N.transmitters.size(); i++)
-    {
-        os << "Tx: " << i << std::endl;
-        os << N.transmitters[i] << std::endl;
-    }
 
     //check broken link
     for (std::vector<Transmitter>::size_type i = 0; i < N.transmitters.size(); i++)
@@ -326,25 +353,21 @@ std::ostream& operator<<(std::ostream& os, const Network& N)
             if (N.separetion[i][j] > abs( N.transmitters[i].Freq() - N.transmitters[j].Freq()))
             {
                 tot_cost.hard_link++;
-                os << "Coppia Tx: " << i << " - " << j << " hard link broken" <<std::endl;
             }
             else if (abs( N.transmitters[i].Freq() - N.transmitters[j].Freq())==0
                       && N.same[i][j] > 0.0)
             {
                 tot_cost.interference+=N.same[i][j];
-                os << "Coppia Tx: " << i << " - " << j << " interference: " << N.same[i][j] <<std::endl;
             }
             else if(abs( N.transmitters[i].Freq() - N.transmitters[j].Freq())==1
                       && N.adjacent[i][j] > 0.0)
             {
                 tot_cost.interference+=N.adjacent[i][j];
-                os << "Coppia Tx: " << i << " - " << j << " interference: " << N.adjacent[i][j] <<std::endl;
             }
         }
     }
 
-    os << "Total hard links broken: "<< tot_cost.hard_link <<std::endl;
-    os << "Total interference: "<< tot_cost.interference <<std::endl;
+    os << tot_cost.hard_link << " " << tot_cost.interference <<std::endl;
 
     
 
