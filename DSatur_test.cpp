@@ -22,10 +22,10 @@ int main(int argc, char* argv[])
     if(ind !=std::string::npos){
         str.erase(ind,substring.length()); 
     }
-    out.open(str+"_greedy.txt");
+    out.open(str+"_dsatur.txt");
 
     Network net(s);
-    net.Greedy();
+    net.DSatur();
 
     out << net;
     out.close();
