@@ -1,6 +1,6 @@
 COMPILER_OPTIONS= -Wall -Wfatal-errors -O3 -std=c++23 #-DDEBUG
 
-all: TestTx InputTest TimedInputTest TestCost TestOutput
+all: TestTx TestInput TestInputTime TestCost TestOutput
 
 #TEST
 TestOutput: DriverOutput.o Output.o Cost.o Input.o Transmitter.o
@@ -12,10 +12,10 @@ TestCost: DriverCost.o Cost.o
 TestTx: DriverTx.o Transmitter.o DriverTimedInput.o
 	g++ -o TestTx DriverTx.o Transmitter.o
 
-InputTest: DriverInput.o Input.o Transmitter.o
+TestInput: DriverInput.o Input.o Transmitter.o
 	g++ -o InputTest DriverInput.o Input.o Transmitter.o
 
-TimedInputTest: DriverTimedInput.o Input.o Transmitter.o
+TestInputTime: DriverTimedInput.o Input.o Transmitter.o
 	g++ -o TimedInputTest DriverTimedInput.o Input.o Transmitter.o
 
 #DRIVER
@@ -48,4 +48,5 @@ Output.o: Cost.hh Input.hh Output.hh Output.cc
 	g++ -c $(COMPILER_OPTIONS) Output.cc
 
 clean:
-	rm -f $(find . -maxdepth 1 -type f -executable ! -name "*.*") *.o
+	rm -f *.o
+	rm -f Test*
