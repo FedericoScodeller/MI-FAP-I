@@ -1,4 +1,4 @@
-#include "Cost.hh"
+#include "../include/Cost.hh"
 #include <ios>
 #include <iostream>
 #include <ostream>

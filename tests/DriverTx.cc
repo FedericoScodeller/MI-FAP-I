@@ -1,10 +1,10 @@
-#include "Transmitter.hh"
+#include "../include/Transmitter.hh"
 #include <iostream>
 #include <fstream>
 
 
 int main()
-{	 
+{
 	 std::ifstream is("Tiny.json");
 	 nlohmann::json jsonfile;
 
@@ -15,6 +15,6 @@ int main()
 	 std::cout << tx <<std::endl;
 
 
-	  	  
+
 	return 0;
 }

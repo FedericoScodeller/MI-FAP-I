@@ -1,6 +1,6 @@
 #ifndef TRANSMITTER_HH
 #define TRANSMITTER_HH
-#include "json.hh"
+#include "../libs/json.hh"
 
 enum class TxType {bcch, tch};
 

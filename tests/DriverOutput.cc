@@ -1,6 +1,6 @@
 #include <iostream>
 #include <fstream>
-#include "Output.hh"
+#include "../include/Output.hh"
 
 int main()
 {

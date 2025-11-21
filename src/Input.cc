@@ -1,4 +1,4 @@
-#include "Input.hh"
+#include "../include/Input.hh"
 #include <vector>
 
 Input::Input(nlohmann::json data)

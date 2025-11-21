@@ -1,4 +1,4 @@
-#include "Transmitter.hh"
+#include "../include/Transmitter.hh"
 
 Transmitter::Transmitter(nlohmann::json data, TxType type) : type(type)
 {

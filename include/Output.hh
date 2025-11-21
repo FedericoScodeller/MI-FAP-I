@@ -3,7 +3,6 @@
 #include "Cost.hh"
 #include "Input.hh"
 
-
 class Output
 {
    protected:

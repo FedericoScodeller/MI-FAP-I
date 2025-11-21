@@ -1,6 +1,7 @@
 #ifndef COST_HH
 #define COST_HH
 #include <iostream>
+
 class Cost
 {
    protected:
@@ -18,7 +19,6 @@ class Cost
       friend bool operator==(const Cost& a,const Cost& b);
       friend bool operator<(const Cost& a,const Cost& b);
       //is needed operator+?
-
 };
 
 #endif

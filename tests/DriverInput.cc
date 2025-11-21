@@ -1,5 +1,5 @@
 #include <fstream>
-#include "Input.hh"
+#include "../include/Input.hh"
 #include <iostream>
 
 int main()

@@ -1,4 +1,4 @@
-#include "Cost.hh"
+#include "../include/Cost.hh"
 
 std::ostream &operator<<(std::ostream &os, const Cost &cost)
 {
@@ -11,7 +11,6 @@ std::ostream &operator<<(std::ostream &os, const Cost &cost)
 
    return os;
 }
-
 
 Cost& Cost::operator+=(const Cost& c)
 {
