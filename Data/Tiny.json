@@ -1,0 +1,256 @@
+{
+    "format": {
+        "type": "scenario",
+        "version": 1.0
+    },
+    "general_information": {
+        "scenario_id": "Tiny",
+        "annotation": "This tiny scenario is used for explanation in the proposal for file formats for scenarios and frequency assignments.",
+        "network_type": "GSM900",
+        "spectrum": {
+            "min": 5,
+            "max": 17
+        },
+        "co_site_separation": 2,
+        "default_co_cell_separation": 3,
+        "handover_separation": {
+            "bcch->bcch": 2,
+            "bcch->tch": 1,
+            "tch->bcch": 2,
+            "tch->tch": 1
+        },
+        "demand": "absolute",
+        "site_locations": true
+    },
+    "cells": [
+        {
+            "id": "1",
+            "site": "A",
+            "sector": 1,
+            "demand": 1,
+            "location": {
+                "x": 3,
+                "y": 5
+            }
+        },
+        {
+            "id": "2",
+            "site": "A",
+            "sector": 2,
+            "demand": 3,
+            "location": {
+                "x": 3,
+                "y": 5
+            }
+        },
+        {
+            "id": "3",
+            "site": "A",
+            "sector": 3,
+            "demand": 2,
+            "location": {
+                "x": 3,
+                "y": 5
+            }
+        },
+        {
+            "id": "4",
+            "site": "B",
+            "sector": 1,
+            "demand": 2,
+            "location": {
+                "x": 1,
+                "y": 10
+            }
+        },
+        {
+            "id": "5",
+            "site": "B",
+            "sector": 2,
+            "demand": 1,
+            "location": {
+                "x": 1,
+                "y": 10
+            },
+            "blocked_channels": [
+                5,
+                6
+            ]
+        },
+        {
+            "id": "6",
+            "site": "C",
+            "sector": 1,
+            "demand": 1,
+            "location": {
+                "x": 9,
+                "y": 10
+            },
+            "blocked_channels": [
+                13
+            ]
+        },
+        {
+            "id": "7",
+            "site": "C",
+            "sector": 2,
+            "demand": 2,
+            "location": {
+                "x": 9,
+                "y": 10
+            }
+        }
+    ],
+    "cell_relations": [
+        {
+            "from": "1",
+            "to": "2",
+            "handover": true
+        },
+        {
+            "from": "1",
+            "to": "3",
+            "handover": true
+        },
+        {
+            "from": "2",
+            "to": "1",
+            "handover": true
+        },
+        {
+            "from": "2",
+            "to": "3",
+            "handover": true
+        },
+        {
+            "from": "2",
+            "to": "4",
+            "handover": true,
+            "downlink_area_interference": {
+                "same_channel": 0.3,
+                "adjacent_channel": 0.1
+            }
+        },
+        {
+            "from": "2",
+            "to": "5",
+            "downlink_area_interference": {
+                "same_channel": 0.1,
+                "adjacent_channel": 0.02
+            }
+        },
+        {
+            "from": "3",
+            "to": "1",
+            "handover": true
+        },
+        {
+            "from": "3",
+            "to": "2",
+            "handover": true
+        },
+        {
+            "from": "3",
+            "to": "6",
+            "handover": true,
+            "downlink_area_interference": {
+                "same_channel": 0.05
+            }
+        },
+        {
+            "from": "3",
+            "to": "7",
+            "handover": true,
+            "downlink_area_interference": {
+                "same_channel": 0.2,
+                "adjacent_channel": 0.06
+            }
+        },
+        {
+            "from": "4",
+            "to": "1",
+            "downlink_area_interference": {
+                "same_channel": 0.01
+            }
+        },
+        {
+            "from": "4",
+            "to": "2",
+            "downlink_area_interference": {
+                "same_channel": 0.25,
+                "adjacent_channel": 0.09
+            }
+        },
+        {
+            "from": "4",
+            "to": "5",
+            "handover": true
+        },
+        {
+            "from": "4",
+            "to": "7",
+            "handover": true,
+            "downlink_area_interference": {
+                "same_channel": 0.25,
+                "adjacent_channel": 0.08
+            }
+        },
+        {
+            "from": "5",
+            "to": "4",
+            "handover": true
+        },
+        {
+            "from": "5",
+            "to": "7",
+            "handover": true,
+            "downlink_area_interference": {
+                "same_channel": 0.15,
+                "adjacent_channel": 0.04
+            }
+        },
+        {
+            "from": "6",
+            "to": "3",
+            "handover": true,
+            "downlink_area_interference": {
+                "same_channel": 0.01
+            }
+        },
+        {
+            "from": "6",
+            "to": "7",
+            "handover": true
+        },
+        {
+            "from": "7",
+            "to": "2",
+            "downlink_area_interference": {
+                "same_channel": 0.06,
+                "adjacent_channel": 0.01
+            }
+        },
+        {
+            "from": "7",
+            "to": "3",
+            "handover": true,
+            "downlink_area_interference": {
+                "same_channel": 0.12,
+                "adjacent_channel": 0.03
+            }
+        },
+        {
+            "from": "7",
+            "to": "5",
+            "downlink_area_interference": {
+                "same_channel": 0.25,
+                "adjacent_channel": 0.08
+            }
+        },
+        {
+            "from": "7",
+            "to": "6",
+            "handover": true
+        }
+    ]
+}
