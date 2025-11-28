@@ -1,179 +1,139 @@
 #include "../include/Input.hh"
-#include <vector>
 
-Input::Input(nlohmann::json data)
+Input::Input(const json& data)
 {
-   std::vector<bool> glob_blocked_ch, tmp_ch_vect;
 
-   id=data["general_information"]["scenario_id"];
-   freq_min = data["general_information"]["spectrum"]["min"];
-   freq_max = data["general_information"]["spectrum"]["max"];
+   const json& info=data["general_information"];
+   //SPECTRUM
+
+   const unsigned freq_min = info["spectrum"]["min"];
+   const unsigned freq_max = info["spectrum"]["max"];
    tot_ch = freq_max - freq_min + 1;
 
-   glob_blocked_ch.resize(tot_ch,false);
-
-   for (nlohmann::basic_json<>::size_type i = 0; i < data["general_information"]["globally_blocked_channels"].size();i++)
+   std::vector<bool> glob_blk_ch(tot_ch,false);
+   if(info.contains("globally_blocked_channels"))
    {
-      glob_blocked_freq.push_back(static_cast<unsigned>(data["general_information"]["globally_blocked_channels"][i]));
-      glob_blocked_ch[ChFreq(glob_blocked_freq[i])] = true;
-   }
-
-   co_site_sep = data["general_information"]["co_site_separation"];
-   co_cell_sep = data["general_information"]["default_co_cell_separation"];
-
-   bcch_bcch = data["general_information"]["handover_separation"]["bcch->bcch"];
-   bcch_tch = data["general_information"]["handover_separation"]["bcch->tch"];
-   tch_bcch = data["general_information"]["handover_separation"]["tch->bcch"];
-   tch_tch = data["general_information"]["handover_separation"]["tch->tch"];
-
-   //std::vector<unsigned> local_block_freq;//non necessario non da alcun vantaggio o svantaggio nel tempo
-
-   for (nlohmann::basic_json<>::size_type i = 0; i < data["cells"].size(); i++)
-   {
-      tmp_ch_vect = glob_blocked_ch;
-
-      // for (nlohmann::basic_json<>::size_type j = 0; j < data["cells"][i]["blocked_channels"].size();j++)
-      //     tmp_ch_vect[ChFreq(static_cast<unsigned>(data["cells"][i]["blocked_channels"][j]))] = true;
-
-
-      network.push_back(Transmitter(data["cells"][i], TxType::bcch));
-
-      //altenativa canali bloccati
-      //local_block_freq=network.back().BlockedFreq();
-      // for(auto freq:local_block_freq)
-      //    tmp_ch_vect[ChFreq(freq)] = true;
-      for(auto freq:network.back().BlockedFreq())
-         tmp_ch_vect[ChFreq(freq)] = true;
-
-
-
-      tx_blocked_ch.push_back(tmp_ch_vect);
-
-      for (nlohmann::basic_json<>::size_type j = 1;j < data["cells"][i]["demand"]; j++)
+      const json& blk_ch = info["globally_blocked_channels"];
+      const size_t blk_ch_size = blk_ch.size();
+      for(size_t i = 0;i < blk_ch_size;i++)
       {
-         network.push_back(Transmitter(data["cells"][i], TxType::tch));
-         tx_blocked_ch.push_back(tmp_ch_vect);
+         glob_blk_ch[ blk_ch[i].get<unsigned>() - freq_min ] = true;
       }
    }
-   network_size = network.size();
+
+   //TX DATA
+   std::vector<std::string> tx_site, tx_cell;
+
+   enum TxType {bcch, tch};
+   std::vector<TxType> tx_type;
+
+   const json& cells = data["cells"];
+   const size_t cell_number =cells.size();
+
+   std::vector<bool> tx_blk_ch;
+   size_t demand;
+
+   for(size_t i = 0; i < cell_number; i++)
+   {
+      tx_blk_ch = glob_blk_ch;
+      if(cells[i].contains("blocked_channels"))
+      {
+         const json& loc_blk_ch = cells[i]["blocked_channels"];
+         const size_t loc_blk_ch_size = loc_blk_ch.size();
+         for(size_t j = 0;j < loc_blk_ch_size;j++)
+         {
+            tx_blk_ch[ loc_blk_ch[j].get<unsigned>() - freq_min ] = true;
+         }
+      }
+
+      demand = cells[i]["demand"];
+      for(size_t j = 0; j < demand; j++)
+      {
+         tx_cell.push_back(cells[i]["id"]);
+         tx_site.push_back(cells[i]["site"]);
+         tx_type.push_back(j == 0 ? bcch : tch);
+         mat_blk_ch.push_back( tx_blk_ch);
+      }
+   }
+
+   //TX RELATION
+
+   network_size = tx_cell.size();
+
    ch_sep.resize(network_size, std::vector<unsigned>(network_size, 0));
    same_ch_int.resize(network_size, std::vector<float>(network_size, 0.0));
    adj_ch_int.resize(network_size, std::vector<float>(network_size, 0.0));
 
-   for (std::vector<Transmitter>::size_type i = 0; i < network_size; i++)
+   const unsigned co_site_sep = info["co_site_separation"];
+   const unsigned co_cell_sep = info["default_co_cell_separation"];
+
+   for (size_t i = 0; i < network_size; i++)
    {
-      for (std::vector<Transmitter>::size_type j = i + 1; j < network_size; j++)
+      for (size_t j = i + 1; j < network_size; j++)
       {
-         if (network[i].Cell() == network[j].Cell())
-            ch_sep[i][j] = ch_sep[j][i] =co_cell_sep; // maybe the max is pointless cell sep > site sep almeno nei nostri casi
-         else if (network[i].Site() == network[j].Site())
+         if (tx_cell[i] == tx_cell[j])
+            ch_sep[i][j] = ch_sep[j][i] = co_cell_sep;
+         else if (tx_site[i] == tx_site[j])
             ch_sep[i][j] = ch_sep[j][i] = co_site_sep;
       }
    }
+   //CELL RELATION
+   const std::vector<std::vector<unsigned>> handover = { {info["handover_separation"]["bcch->bcch"],info["handover_separation"]["bcch->tch"]},
+                                                 {info["handover_separation"]["tch->bcch"], info["handover_separation"]["tch->tch"]}};
 
+   unsigned idx_from,idx_to;
+   std::string from_cell_id, to_cell_id;
+   const json& cell_rel = data["cell_relations"];
+   const size_t cell_rel_size = cell_rel.size();
 
-   // special separetion and interf
-   std::vector<unsigned> from, to;
-   for (nlohmann::basic_json<>::size_type n = 0; n < data["cell_relations"].size(); n++)
+   for(size_t n = 0; n < cell_rel_size; n++)
    {
-      // from = FindTxFromCell(data["cell_relations"][n]["from"]);
-      // to = FindTxFromCell(data["cell_relations"][n]["to"]);
-      // the improvement is at worst 30% if there is a considerable size
-      from = FindTxFromCellOpt(data["cell_relations"][n]["from"]);
-      to = FindTxFromCellOpt(data["cell_relations"][n]["to"]);
-      for (auto i : from)
+      idx_from = idx_to = 0;
+      from_cell_id = cell_rel[n]["from"];
+      to_cell_id = cell_rel[n]["to"];
+
+      while (tx_cell[idx_from] != from_cell_id) idx_from++;
+
+      while (tx_cell[idx_to] != to_cell_id) idx_to++;
+
+      for (size_t i = idx_from; i < network_size && tx_cell[i] == from_cell_id; i++)
       {
-         for (auto j : to)
+         for (size_t j = idx_to; i < network_size &&  tx_cell[j] == to_cell_id; j++)
          {
-            if (!data["cell_relations"][n]["separation"].is_null())
-               ch_sep[i][j] = ch_sep[j][i] = std::max(ch_sep[i][j],static_cast<unsigned>(data["cell_relations"][n]["separation"]));
-            if (data["cell_relations"][n]["handover"]==true) // maybe the == true is unecessary? no super necessary!
-               ch_sep[i][j] = ch_sep[j][i] = std::max(ch_sep[i][j], std::max(Handover(i, j), Handover(j, i)));
-            if (!data["cell_relations"][n]["downlink_area_interference"]["same_channel"].is_null())
-               same_ch_int[i][j] = same_ch_int[j][i] += static_cast<float>(data["cell_relations"][n]["downlink_area_interference"]["same_channel"]);
-            if (!data["cell_relations"][n]["downlink_area_interference"]["adjacent_channel"].is_null())
-               adj_ch_int[i][j] = adj_ch_int[j][i] += static_cast<float>(data["cell_relations"][n]["downlink_area_interference"]["adjacent_channel"]);
+            if (cell_rel[n].contains("separation"))
+               ch_sep[i][j] = std::max(ch_sep[i][j],cell_rel[n]["separation"].get<unsigned>());
+            if (cell_rel[n].contains("handover") && cell_rel[n]["handover"]) //devo trovare un modo migliore per questa condizione
+               ch_sep[i][j] = std::max(ch_sep[i][j],handover[tx_type[i]][tx_type[j]]);
+            if (cell_rel[n].contains("downlink_area_interference") && cell_rel[n]["downlink_area_interference"].contains("same_channel"))
+               same_ch_int[i][j] = data["cell_relations"][n]["downlink_area_interference"]["same_channel"];
+            if (cell_rel[n].contains("downlink_area_interference") && cell_rel[n]["downlink_area_interference"].contains("adjacent_channel"))
+               adj_ch_int[i][j] =data["cell_relations"][n]["downlink_area_interference"]["adjacent_channel"];
          }
       }
    }
+
+   //ADJ MATRIX
+   adj_mat.resize(network_size);
+
+   for(size_t i=0; i < network_size; i++)
+      for (size_t j = 0; j < network_size; j++)
+         if(ch_sep[i][j] != 0 || same_ch_int[i][j] != 0 || adj_ch_int[i][j] != 0 )
+            adj_mat[i].push_back(j);
 }
 
-std::vector<unsigned> Input::FindTxFromCell(std::string cell) const
-{
-   std::vector<unsigned> out;
-   for (unsigned i = 0; i < network_size; i++)
-      if (cell == network[i].Cell())
-         out.push_back(i);
-   return out; //thanks to the RVO from C++11 onward it's O(1) and really easy to use I don't even return by reference (const) to be fast!
-}
-
-std::vector<unsigned> Input::FindTxFromCellOpt(std::string cell) const
-{
-   std::vector<unsigned> out;
-   unsigned i = 0;
-   while (cell != network[i].Cell())
-      i++;
-   while (i < network_size && cell == network[i].Cell())
-      out.push_back(i++);
-   return out;
-}
-
-unsigned Input::Handover(unsigned from, unsigned to) const
-{
-   if (network[from].Type() == TxType::bcch)
-      if (network[to].Type() == TxType::bcch)
-         return bcch_bcch;
-      else
-         return bcch_tch;
-   else if (network[to].Type() == TxType::bcch)
-      return tch_bcch;
-   else
-      return tch_tch;
-}
 
 std::ostream &operator<<(std::ostream &os, const Input &in)
 {
-   os << "GENERAL INFO" << std::endl<< std::endl;
 
-   os << "id: " << in.id << std::endl;
-   os << "network size: " << in.network_size << std::endl;
-   os << "number of channels: " << in.tot_ch << std::endl;
+   os << "#TX " << in.network_size << " #CH " << in.tot_ch;
+
 #ifdef DEBUG
-   os << "freq min: " << in.freq_min << std::endl;
-   os << "freq max: " << in.freq_max << std::endl;
-
-   os << "globally blocked freq: [ ";
-   for (auto &x : in.glob_blocked_freq)
-   {
-      os << x;
-      if (&x != &in.glob_blocked_freq.back())
-         os << ", ";
-   }
-   os << " ]" << std::endl<< std::endl;
-
-   os << "co site separetion: " << in.co_site_sep << std::endl;
-   os << "co cell separetion: " << in.co_cell_sep << std::endl<< std::endl;
-
-   os << "bcch->bcch: " << in.bcch_bcch << std::endl;
-   os << "bcch->tch: " << in.bcch_tch << std::endl;
-   os << "tch->bcch: " << in.tch_bcch << std::endl;
-   os << "tch->tch: " << in.tch_tch << std::endl<< std::endl;
-
-
-   os << std::endl << "NETWORK" << std::endl<< std::endl;
-   for (size_t tx=0; tx < in.network_size; tx++)
-   {
-      os << "tx: " << tx << std::endl;
-      os << in.network[tx] << std::endl;
-   }
-
-   os << std::endl;
 
    os << std::endl << "CHANNELS BLOCKED" << std::endl<< std::endl;
    for (size_t tx = 0; tx < in.network_size; tx++)
    {
       for (size_t f = 0; f < in.tot_ch; f++)
-         os << in.tx_blocked_ch[tx][f] << " ";
+         os << in.mat_blk_ch[tx][f] << " ";
       os << std::endl;
    }
 
@@ -206,6 +166,16 @@ std::ostream &operator<<(std::ostream &os, const Input &in)
    {
       for (size_t j = 0; j < in.network_size; j++)
          os << in.adj_ch_int[i][j] << " ";
+      os << std::endl;
+   }
+
+   os << std::endl;
+
+   os << "ADJ MATRIX" << std::endl << std::endl;
+   for (size_t i = 0; i < in.network_size; i++)
+   {
+      for (size_t j = 0; j < in.adj_mat[i].size(); j++)
+         os << in.adj_mat[i][j] << " ";
       os << std::endl;
    }
 #endif

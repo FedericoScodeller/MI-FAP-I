@@ -4,7 +4,7 @@
 
 int main()
 {
-    std::ifstream is("Tiny.json");
+    std::ifstream is("./data/Tiny.json");
     nlohmann::json jsonfile;
 
     is >> jsonfile;

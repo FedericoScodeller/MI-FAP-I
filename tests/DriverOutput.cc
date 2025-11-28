@@ -4,15 +4,15 @@
 
 int main()
 {
-   std::ifstream is("Tiny.json");
-   nlohmann::json jsonfile;
+   // std::ifstream is("./data/Tiny.json");
+   // json jsonfile;
 
-   is >> jsonfile;
+   // is >> jsonfile;
 
-   Input network(jsonfile);
+   // Input network(jsonfile);
 
-   Output solution(network);
+   // Output solution(network);
 
-   std::cout << network <<std::endl<<solution <<std::endl;
+   // std::cout << network <<std::endl<<solution <<std::endl;
    return 0;
 }

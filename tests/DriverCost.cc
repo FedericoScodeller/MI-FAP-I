@@ -21,10 +21,13 @@ int main()
    cout << "c1 < c2 : " << (c1 < c2) << endl;
    cout << "c3 < c2 : " << (c3 < c2) << endl;
    cout << "c3 < c4 : " << (c3 < c4) << endl;
-   cout << "c1 == c3 : " << (c1 == c3) << endl;
-   cout << "c3 == c4 : " << (c3 == c4) << endl;
+   cout << "c1 > c2 : " << (c1 > c2) << endl;
+   cout << "c3 > c2 : " << (c3 > c2) << endl;
+   cout << "c3 > c4 : " << (c3 > c4) << endl;
 
    c1=c3+=c2=c4;
+   c2+=Cost(0,9.9);
+   c4+=1;
 
    cout <<"c1: " << c1 << endl;
    cout <<"c2: " << c2 << endl;
@@ -35,9 +38,9 @@ int main()
    cout << "c1 < c2 : " << (c1 < c2) << endl;
    cout << "c3 < c1 : " << (c3 < c1) << endl;
    cout << "c4 < c3 : " << (c4 < c3) << endl;
-   cout << "c1 == c3 : " << (c1 == c3) << endl;
-   cout << "c3 == c2 : " << (c3 == c2) << endl;
-   cout << "c4 == c2 : " << (c4 == c2) << endl;
+   cout << "c1 > c2 : " << (c1 > c2) << endl;
+   cout << "c3 > c2 : " << (c3 > c2) << endl;
+   cout << "c3 > c4 : " << (c3 > c4) << endl;
 
    return 0;
 }

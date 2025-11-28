@@ -9,9 +9,9 @@ using namespace std::chrono;
 
 int main(int argc, char* argv[])
 {
-    std::ifstream is(argv[1]);
-    std::ofstream result(argv[2],ios::app);
-    nlohmann::json jsonfile;
+    ifstream is(argv[1]);
+    ofstream result(argv[2],ios::app);
+    json jsonfile;
     is >> jsonfile;//it's pointless to measure I can't improve it
 
     auto start = high_resolution_clock::now();
@@ -19,7 +19,7 @@ int main(int argc, char* argv[])
     auto stop = high_resolution_clock::now();
 
     auto duration = duration_cast<microseconds>(stop - start);
-    result<< argv[1] << " " << duration.count() << " microseconds" << endl;
+    result << argv[1] << " " << network << " " << duration.count() << " us" << endl;
 
     is.close();
     result.close();

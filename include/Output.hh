@@ -5,14 +5,24 @@
 
 class Output
 {
+
+   friend std::ostream &operator<<(std::ostream &os, const Output &out);
+
+   public:
+      Output(const Input& in);
+      int MinCostCh (unsigned tx) const;
+      void AssignCh(unsigned tx, unsigned ch);
+      Cost TotCost(void) const;
+      Cost TotCostAlt(void) const;
+
    protected:
       const Input& input;
       std::vector<int> vec_ch;
-      std::vector<Cost> vec_cost;
-   public:
-      Output(const Input& in);
+      std::vector<std::vector<Cost>> mat_cost;
 
-   friend std::ostream &operator<<(std::ostream &os, const Output &out);
+
+
+
 };
 
 #endif
