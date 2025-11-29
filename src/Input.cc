@@ -1,4 +1,8 @@
 #include "../include/Input.hh"
+#include <algorithm>
+#include <iostream>
+#include <string>
+#include <unordered_map>
 
 Input::Input(const json& data)
 {
@@ -23,6 +27,7 @@ Input::Input(const json& data)
 
    //TX DATA
    std::vector<std::string> tx_site, tx_cell;
+   std::unordered_map<std::string, unsigned> map_cell;
 
    enum TxType {bcch, tch};
    std::vector<TxType> tx_type;
@@ -45,6 +50,8 @@ Input::Input(const json& data)
             tx_blk_ch[ loc_blk_ch[j].get<unsigned>() - freq_min ] = true;
          }
       }
+
+      map_cell [cells[i]["id"].get<std::string>()] = tx_cell.size();
 
       demand = cells[i]["demand"];
       for(size_t j = 0; j < demand; j++)
@@ -92,9 +99,8 @@ Input::Input(const json& data)
       from_cell_id = cell_rel[n]["from"];
       to_cell_id = cell_rel[n]["to"];
 
-      while (tx_cell[idx_from] != from_cell_id) idx_from++;
-
-      while (tx_cell[idx_to] != to_cell_id) idx_to++;
+      idx_from = map_cell[from_cell_id];
+      idx_to = map_cell[to_cell_id];
 
       for (size_t i = idx_from; i < network_size && tx_cell[i] == from_cell_id; i++)
       {
