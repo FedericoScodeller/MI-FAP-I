@@ -10,15 +10,15 @@ class Output
 
    public:
       Output(const Input& in);
-      int MinCostCh (unsigned tx) const;
-      void AssignCh(unsigned tx, unsigned ch);
-      Cost TotCost(void) const;
-      Cost TotCostAlt(void) const;
+      void AssignCh(unsigned tx, unsigned ch){vec_ch[tx]=ch;};
+      void WriteCost(Cost c) {tot_cost=c;};
+      Cost TotCost(void) const {return tot_cost;};
+      int Ch(int tx) const {return vec_ch[tx];};
 
    protected:
       const Input& input;
       std::vector<int> vec_ch;
-      std::vector<std::vector<Cost>> mat_cost;
+      Cost tot_cost;
 
 
 

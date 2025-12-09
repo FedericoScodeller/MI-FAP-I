@@ -10,8 +10,8 @@ Input::Input(const json& data)
    const json& info=data["general_information"];
    //SPECTRUM
 
-   const unsigned freq_min = info["spectrum"]["min"];
-   const unsigned freq_max = info["spectrum"]["max"];
+   const int freq_min = info["spectrum"]["min"];
+   const int freq_max = info["spectrum"]["max"];
    tot_ch = freq_max - freq_min + 1;
 
    std::vector<bool> glob_blk_ch(tot_ch,false);
@@ -67,7 +67,7 @@ Input::Input(const json& data)
 
    network_size = tx_cell.size();
 
-   ch_sep.resize(network_size, std::vector<unsigned>(network_size, 0));
+   ch_sep.resize(network_size, std::vector<int>(network_size, 0));
    same_ch_int.resize(network_size, std::vector<float>(network_size, 0.0));
    adj_ch_int.resize(network_size, std::vector<float>(network_size, 0.0));
 
@@ -85,7 +85,7 @@ Input::Input(const json& data)
       }
    }
    //CELL RELATION
-   const std::vector<std::vector<unsigned>> handover = { {info["handover_separation"]["bcch->bcch"],info["handover_separation"]["bcch->tch"]},
+   const std::vector<std::vector<int>> handover = { {info["handover_separation"]["bcch->bcch"],info["handover_separation"]["bcch->tch"]},
                                                  {info["handover_separation"]["tch->bcch"], info["handover_separation"]["tch->tch"]}};
 
    unsigned idx_from,idx_to;
@@ -107,7 +107,7 @@ Input::Input(const json& data)
          for (size_t j = idx_to; i < network_size &&  tx_cell[j] == to_cell_id; j++)
          {
             if (cell_rel[n].contains("separation"))
-               ch_sep[i][j] = std::max(ch_sep[i][j],cell_rel[n]["separation"].get<unsigned>());
+               ch_sep[i][j] = std::max(ch_sep[i][j],cell_rel[n]["separation"].get<int>());
             if (cell_rel[n].contains("handover") && cell_rel[n]["handover"]) //devo trovare un modo migliore per questa condizione
                ch_sep[i][j] = std::max(ch_sep[i][j],handover[tx_type[i]][tx_type[j]]);
             if (cell_rel[n].contains("downlink_area_interference") && cell_rel[n]["downlink_area_interference"].contains("same_channel"))
@@ -119,19 +119,25 @@ Input::Input(const json& data)
    }
 
    //ADJ MATRIX
-   adj_mat.resize(network_size);
+   adj_mat_from.resize(network_size);
+   adj_mat_to.resize(network_size);
+   degree.resize(network_size);
 
    for(size_t i=0; i < network_size; i++)
       for (size_t j = 0; j < network_size; j++)
          if(ch_sep[i][j] != 0 || same_ch_int[i][j] != 0 || adj_ch_int[i][j] != 0 )
-            adj_mat[i].push_back(j);
+         {
+            adj_mat_from[i].push_back(j);
+            adj_mat_to[j].push_back(i);
+            degree[j] += ch_sep[i][j];
+         }
 }
-
 
 std::ostream &operator<<(std::ostream &os, const Input &in)
 {
 
    os << "#TX " << in.network_size << " #CH " << in.tot_ch;
+
 
 #ifdef DEBUG
 
@@ -177,12 +183,32 @@ std::ostream &operator<<(std::ostream &os, const Input &in)
 
    os << std::endl;
 
-   os << "ADJ MATRIX" << std::endl << std::endl;
+   os << "ADJ MATRIX FROM" << std::endl << std::endl;
    for (size_t i = 0; i < in.network_size; i++)
    {
-      for (size_t j = 0; j < in.adj_mat[i].size(); j++)
-         os << in.adj_mat[i][j] << " ";
+      for (size_t j = 0; j < in.adj_mat_from[i].size(); j++)
+         os << in.adj_mat_from[i][j] << " ";
       os << std::endl;
+   }
+
+   os << std::endl;
+
+   os << "ADJ MATRIX TO" << std::endl << std::endl;
+   for (size_t i = 0; i < in.network_size; i++)
+   {
+      for (size_t j = 0; j < in.adj_mat_to[i].size(); j++)
+         os << in.adj_mat_to[i][j] << " ";
+      os << std::endl;
+   }
+
+   os << std::endl;
+
+   os << "DEGREE" << std::endl <<std::endl;
+   for (size_t tx = 0; tx < in.network_size; tx++)
+   {
+
+         os << tx << " : " << in.Degree(tx) <<std::endl;
+
    }
 #endif
    return os;
