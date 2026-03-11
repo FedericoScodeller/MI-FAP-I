@@ -1,5 +1,6 @@
 #include "../include/Input.hh"
 #include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <string>
 #include <unordered_map>
@@ -68,8 +69,8 @@ Input::Input(const json& data)
    network_size = tx_cell.size();
 
    ch_sep.resize(network_size, std::vector<int>(network_size, 0));
-   same_ch_int.resize(network_size, std::vector<float>(network_size, 0.0));
-   adj_ch_int.resize(network_size, std::vector<float>(network_size, 0.0));
+   same_ch_int.resize(network_size, std::vector<int>(network_size, 0.0));
+   adj_ch_int.resize(network_size, std::vector<int>(network_size, 0.0));
 
    const unsigned co_site_sep = info["co_site_separation"];
    const unsigned co_cell_sep = info["default_co_cell_separation"];
@@ -93,6 +94,11 @@ Input::Input(const json& data)
    const json& cell_rel = data["cell_relations"];
    const size_t cell_rel_size = cell_rel.size();
 
+   if(info.contains("minimal_significant_interference"))
+       min_interf=info["minimal_significant_interference"];
+   else
+       min_interf=0.0001;
+
    for(size_t n = 0; n < cell_rel_size; n++)
    {
       idx_from = idx_to = 0;
@@ -108,12 +114,12 @@ Input::Input(const json& data)
          {
             if (cell_rel[n].contains("separation"))
                ch_sep[i][j] = std::max(ch_sep[i][j],cell_rel[n]["separation"].get<int>());
-            if (cell_rel[n].contains("handover") && cell_rel[n]["handover"]) //devo trovare un modo migliore per questa condizione
+            if (cell_rel[n].contains("handover")) //&& cell_rel[n]["handover"] non serve se c'è ho solo il campo true in questi dati
                ch_sep[i][j] = std::max(ch_sep[i][j],handover[tx_type[i]][tx_type[j]]);
             if (cell_rel[n].contains("downlink_area_interference") && cell_rel[n]["downlink_area_interference"].contains("same_channel"))
-               same_ch_int[i][j] = data["cell_relations"][n]["downlink_area_interference"]["same_channel"];
+               same_ch_int[i][j] = round(static_cast<float>(data["cell_relations"][n]["downlink_area_interference"]["same_channel"])/ min_interf);
             if (cell_rel[n].contains("downlink_area_interference") && cell_rel[n]["downlink_area_interference"].contains("adjacent_channel"))
-               adj_ch_int[i][j] =data["cell_relations"][n]["downlink_area_interference"]["adjacent_channel"];
+               adj_ch_int[i][j] = round(static_cast<float>(data["cell_relations"][n]["downlink_area_interference"]["adjacent_channel"]) / min_interf);
          }
       }
    }

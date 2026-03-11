@@ -7,12 +7,14 @@ class Cost
    friend std::ostream &operator<<(std::ostream &os, const Cost &cost);
    friend bool operator<(const Cost& a,const Cost& b);
    friend bool operator>(const Cost& a,const Cost& b);
-   friend bool operator==(const Cost& a,const Cost& b);//to trash immediatly
+   friend bool operator==(const Cost& a,const Cost& b);
+   friend Cost operator+(const Cost& a,const Cost& b);
 
    public:
-      unsigned Hard(void) const {return hard;};
+      int Hard(void) const {return hard;};
+      int Interf(void) const {return interf;};
 
-      Cost(int hard=0, float interf=0.0):hard(hard),interf(interf){};
+      Cost(int hard=0, int interf=0):hard(hard),interf(interf){};
       Cost& operator+=(const Cost& c);
       Cost& operator-=(const Cost& c);
       Cost& operator=(const Cost& c);
@@ -20,7 +22,7 @@ class Cost
    protected:
 
       int hard;
-      float interf;
+      int interf;
 
 
 

@@ -1,13 +1,11 @@
 #!/bin/bash
 
-N=10
-bin=./tests/bin/TestInputTime
+N=500
+bin=./tests/bin/TestGreedy
 data="./data"
-result="./results/test_input_ver2.4.txt"
+result="./results/test_solver_greedy.txt"
 
 for file in "$data"/*.json; do
    echo "working on " $file
-    for ((i=1; i<=N; i++)); do
-         $bin "$file" "$result"
-    done
+   $bin "$file" "$result" "$N"
 done
