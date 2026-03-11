@@ -1,22 +1,65 @@
-OPTIONS = -Wall -Wfatal-errors -std=c++17 -O3
+OPTIONS=-Wall -Wfatal-errors -O3 -std=c++23 #-DDEBUG
 
-test_dsatur.exe: DSatur_test.o network.o transmitter.o 
-	g++ -o test_dsatur.exe DSatur_test.o network.o transmitter.o 
+SRC=./src
+INCLUDE=./include
+LIB=./libs
+TEST=./tests
 
-test_greedy.exe: Greedy_test.o network.o transmitter.o 
-	g++ -o test_greedy.exe Greedy_test.o network.o transmitter.o 
+BUILD=./builds
+BIN=./bin
 
-DSatur_test.o: DSatur_test.cpp network.hpp transmitter.hpp json.hpp
-	g++ -c $(OPTIONS) DSatur_test.cpp
+BUILD_TEST=./tests/builds
+BIN_TEST=./tests/bin
 
-Greedy_test.o: Greedy_test.cpp network.hpp transmitter.hpp json.hpp
-	g++ -c $(OPTIONS) Greedy_test.cpp
+all: $(BIN_TEST)/TestInput $(BIN_TEST)/TestInputTime $(BIN_TEST)/TestCost $(BIN_TEST)/TestOutput $(BIN_TEST)/TestGreedy
 
-transmitter.o: transmitter.cpp transmitter.hpp json.hpp
-	g++ -c $(OPTIONS) transmitter.cpp
+#TEST
+$(BIN_TEST)/TestGreedy: $(BUILD_TEST)/DriverGreedy.o $(BUILD)/Greedy.o $(BUILD)/Output.o $(BUILD)/Cost.o $(BUILD)/Input.o
+	g++ -o $(BIN_TEST)/TestGreedy $(BUILD_TEST)/DriverGreedy.o $(BUILD)/Greedy.o $(BUILD)/Output.o $(BUILD)/Cost.o $(BUILD)/Input.o
 
-network.o: network.cpp network.hpp transmitter.hpp json.hpp
-	g++ -c $(OPTIONS) network.cpp
+$(BIN_TEST)/TestOutput: $(BUILD_TEST)/DriverOutput.o $(BUILD)/Output.o $(BUILD)/Cost.o $(BUILD)/Input.o
+	g++ -o $(BIN_TEST)/TestOutput $(BUILD_TEST)/DriverOutput.o $(BUILD)/Output.o $(BUILD)/Cost.o $(BUILD)/Input.o
 
+$(BIN_TEST)/TestCost: $(BUILD_TEST)/DriverCost.o $(BUILD)/Cost.o
+	g++ -o $(BIN_TEST)/TestCost $(BUILD_TEST)/DriverCost.o $(BUILD)/Cost.o
+
+$(BIN_TEST)/TestInputTime: $(BUILD_TEST)/DriverInputTime.o $(BUILD)/Input.o
+	g++ -o $(BIN_TEST)/TestInputTime $(BUILD_TEST)/DriverInputTime.o $(BUILD)/Input.o
+
+$(BIN_TEST)/TestInput: $(BUILD_TEST)/DriverInput.o $(BUILD)/Input.o
+	g++ -o $(BIN_TEST)/TestInput $(BUILD_TEST)/DriverInput.o $(BUILD)/Input.o
+
+#DRIVER
+$(BUILD_TEST)/DriverGreedy.o: $(INCLUDE)/Greedy.hh $(TEST)/DriverGreedy.cc
+	g++ -c $(OPTIONS) $(TEST)/DriverGreedy.cc -o $(BUILD_TEST)/DriverGreedy.o
+
+$(BUILD_TEST)/DriverOutput.o: $(INCLUDE)/Output.hh $(TEST)/DriverOutput.cc
+	g++ -c $(OPTIONS) $(TEST)/DriverOutput.cc -o $(BUILD_TEST)/DriverOutput.o
+
+$(BUILD_TEST)/DriverCost.o: $(INCLUDE)/Cost.hh $(TEST)/DriverCost.cc
+	g++ -c $(OPTIONS) $(TEST)/DriverCost.cc -o $(BUILD_TEST)/DriverCost.o
+
+$(BUILD_TEST)/DriverInputTime.o: $(INCLUDE)/Input.hh $(TEST)/DriverInputTime.cc
+	g++ -c $(OPTIONS) $(TEST)/DriverInputTime.cc -o $(BUILD_TEST)/DriverInputTime.o
+
+$(BUILD_TEST)/DriverInput.o: $(INCLUDE)/Input.hh $(TEST)/DriverInput.cc
+	g++ -c $(OPTIONS) $(TEST)/DriverInput.cc -o $(BUILD_TEST)/DriverInput.o
+
+
+#SOURCE
+$(BUILD)/Greedy.o: $(INCLUDE)/Input.hh $(INCLUDE)/Output.hh $(INCLUDE)/Greedy.hh $(SRC)/Greedy.cc
+	g++ -c $(OPTIONS) $(SRC)/Greedy.cc -o $(BUILD)/Greedy.o
+
+$(BUILD)/Output.o: $(INCLUDE)/Cost.hh $(INCLUDE)/Input.hh $(INCLUDE)/Output.hh $(SRC)/Output.cc
+	g++ -c $(OPTIONS) $(SRC)/Output.cc -o $(BUILD)/Output.o
+
+$(BUILD)/Cost.o: $(INCLUDE)/Cost.hh  $(SRC)/Cost.cc
+	g++ -c $(OPTIONS) $(SRC)/Cost.cc -o $(BUILD)/Cost.o
+
+$(BUILD)/Input.o: $(LIB)/json.hh $(INCLUDE)/Input.hh $(SRC)/Input.cc
+	g++ -c $(OPTIONS) $(SRC)/Input.cc -o $(BUILD)/Input.o
+
+#CLEAN
 clean:
-	rm *.o *.exe
+	rm -f $(BIN)/* $(BUILD)/*.o $(BIN_TEST)/* $(BUILD_TEST)/*.o
+	clear
