@@ -12,7 +12,7 @@ void Output::AssignCh(unsigned tx, unsigned ch)
    if (vec_ch[tx] == static_cast<int>(ch))
        return;
 
-   if(vec_ch[tx] == -1)
+   if(vec_ch[tx] != -1)
       RemoveCh(tx);
 
    vec_ch[tx]=ch;
@@ -95,6 +95,23 @@ void Output::Reset(void)
       tx=-1;
 
    tot_cost = 0;
+}
+
+bool Output::ValidSolution(void) const
+{
+   for(unsigned tx = 0; tx < input.NetworkSize(); tx++)
+      if (vec_ch[tx] != -1)
+         if(input.ChBlocked(tx,vec_ch[tx]))
+            return false;
+
+   return true;
+}
+
+Output& Output::operator=(const Output& out)
+{
+   vec_ch = out.vec_ch;
+   tot_cost = out.tot_cost;
+   return *this;
 }
 
 std::ostream &operator<<(std::ostream &os, const Output &out)

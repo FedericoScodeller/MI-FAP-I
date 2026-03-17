@@ -7,6 +7,8 @@ class Cost
    friend std::ostream &operator<<(std::ostream &os, const Cost &cost);
    friend bool operator<(const Cost& a,const Cost& b);
    friend bool operator>(const Cost& a,const Cost& b);
+   friend bool operator<=(const Cost& a,const Cost& b);
+   friend bool operator>=(const Cost& a,const Cost& b);
    friend bool operator==(const Cost& a,const Cost& b);
    friend Cost operator+(const Cost& a,const Cost& b);
 

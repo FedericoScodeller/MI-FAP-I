@@ -21,14 +21,14 @@ class Output
 
       Cost ChCost(unsigned tx, int ch) const;
       void TotalCostCheck(void) const;
+      bool ValidSolution(void) const;
+
+      Output& operator=(const Output& out);
 
    protected:
       const Input& input;
       std::vector<int> vec_ch;
       Cost tot_cost;
-
-
-
 
 };
 

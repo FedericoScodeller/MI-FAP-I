@@ -38,6 +38,17 @@ bool operator>(const Cost& a,const Cost& b)
    return a.hard > b.hard ||(a.hard == b.hard && a.interf > b.interf);
 }
 
+bool operator<=(const Cost& a,const Cost& b)
+{
+   return a.hard < b.hard ||(a.hard == b.hard && a.interf <= b.interf);
+}
+
+bool operator>=(const Cost& a,const Cost& b)
+{
+   return a.hard > b.hard ||(a.hard == b.hard && a.interf >= b.interf);
+}
+
+
 bool operator==(const Cost& a,const Cost& b)
 {
    return a.hard == b.hard && a.interf == b.interf;
