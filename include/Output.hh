@@ -13,6 +13,8 @@ class Output
 
       void AssignCh(unsigned tx, unsigned ch);
       void RemoveCh(unsigned tx);
+      void AssignChCost(unsigned tx, unsigned ch, Cost cost);
+      void RemoveChCost(unsigned tx, Cost cost);
 
       Cost TotCost(void) const {return tot_cost;};
       int Ch(int tx) const {return vec_ch[tx];};

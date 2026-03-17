@@ -17,6 +17,7 @@ int main(int argc, char* argv[])
   if (solver.Search())
   {
     Output out = solver.BestSolution();
+    out.TotalCostCheck();
     cout << "Best solution found " << out
          <<   " (" << solver.NumNodes() << " nodes visited)" << endl;
   }

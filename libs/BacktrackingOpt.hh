@@ -51,17 +51,17 @@ bool BacktrackingOpt<Input,Output,CFtype>::Search()
 
       if (backtrack)
       {
-      do
-      {
-         if (NextOfLevel())
+         do
          {
-            count++;
-            backtrack = false;
+            if (NextOfLevel())
+            {
+               count++;
+               backtrack = false;
+            }
+            else
+               GoUpOneLevel();
          }
-         else
-            GoUpOneLevel();
-      }
-      while (backtrack && !AtRootLevel());
+         while (backtrack && !AtRootLevel());
       }
       else
       {

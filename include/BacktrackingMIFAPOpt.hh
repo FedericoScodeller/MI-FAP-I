@@ -14,7 +14,7 @@ class BacktrackingMIFAPOpt : public BacktrackingOpt<Input,Output, Cost>
   void FirstOfLevel() override;
   bool NextOfLevel() override;
   bool Feasible() override;
-  ::Cost Cost() override;
+  class Cost Cost() override;
   // cold-spots
   bool NonImprovingBranch() override;
   void GoUpOneLevel() override;

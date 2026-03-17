@@ -2,23 +2,29 @@
 
 void BacktrackingMIFAPOpt::FirstOfLevel()
 {
-   out.AssignCh(level,0);
+   for(int first_ch = out.Ch(level) + 1; first_ch < in.TotCh(); ++first_ch){
+      if (!in.ChBlocked(level,first_ch)) {
+         out.AssignCh(level,first_ch);
+         break;
+      }
+   }
 }
 
 bool BacktrackingMIFAPOpt::NextOfLevel()
 {
-   int next_ch = out.Ch(level) + 1;
-   if (next_ch < in.TotCh())
-   {
-      out.AssignCh(level,next_ch);
-      return true;
+   for(int next_ch = out.Ch(level) + 1; next_ch < in.TotCh(); ++next_ch){
+      if (!in.ChBlocked(level,next_ch)) {
+         out.AssignCh(level,next_ch);
+         return true;
+      }
    }
    return false;
 }
 
 bool BacktrackingMIFAPOpt::Feasible()
 {
-  return out.ValidSolution();
+   //this version assumed valid only ch assigment... non sono un fan? meglio non farlo? chiedi al prof
+   return true;
 }
 
 Cost BacktrackingMIFAPOpt::Cost()

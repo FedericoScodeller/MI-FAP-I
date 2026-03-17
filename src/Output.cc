@@ -1,4 +1,5 @@
 #include "../include/Output.hh"
+#include <cassert>
 
 
 Output::Output(const Input& in)
@@ -25,6 +26,28 @@ void Output::RemoveCh(unsigned tx)
       return;
 
    tot_cost -= ChCost(tx,vec_ch[tx]);
+   vec_ch[tx]=-1;
+
+}
+
+void Output::AssignChCost(unsigned tx, unsigned ch, Cost cost)
+{
+   if (vec_ch[tx] == static_cast<int>(ch))
+       return;
+
+   if(vec_ch[tx] != -1)
+      RemoveCh(tx);
+
+   vec_ch[tx]=ch;
+   tot_cost += cost;
+}
+
+void Output::RemoveChCost(unsigned tx, Cost cost)
+{
+   if(vec_ch[tx] == -1)
+      return;
+
+   tot_cost -= cost;
    vec_ch[tx]=-1;
 
 }
@@ -67,6 +90,8 @@ Cost Output::ChCost(unsigned tx, int ch) const
 void Output::TotalCostCheck(void) const
 {
    Cost cost_check;
+
+   assert(this->ValidSolution());
 
    for (unsigned tx = 0; tx < input.NetworkSize(); tx++)
    {
