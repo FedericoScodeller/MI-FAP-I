@@ -14,8 +14,8 @@ BIN_TEST=./tests/bin
 all: $(BIN_TEST)/TestInput $(BIN_TEST)/TestInputTime $(BIN_TEST)/TestCost $(BIN_TEST)/TestOutput $(BIN_TEST)/TestGreedy $(BIN_TEST)/TestBacktracking
 
 #TEST
-$(BIN_TEST)/TestBacktracking: $(BUILD_TEST)/DriverBacktracking.o $(BUILD)/BacktrackingMIFAPOpt.o $(BUILD)/Output.o $(BUILD)/Cost.o $(BUILD)/Input.o
-	g++ -o $(BIN_TEST)/TestBacktracking $(BUILD_TEST)/DriverBacktracking.o $(BUILD)/BacktrackingMIFAPOpt.o $(BUILD)/Output.o $(BUILD)/Cost.o $(BUILD)/Input.o
+$(BIN_TEST)/TestBacktracking: $(BUILD_TEST)/DriverBacktracking.o $(BUILD)/Backtracking.o $(BUILD)/Output.o $(BUILD)/Cost.o $(BUILD)/Input.o $(BUILD)/Greedy.o
+	g++ -o $(BIN_TEST)/TestBacktracking $(BUILD_TEST)/DriverBacktracking.o $(BUILD)/Backtracking.o $(BUILD)/Output.o $(BUILD)/Cost.o $(BUILD)/Input.o $(BUILD)/Greedy.o
 
 $(BIN_TEST)/TestGreedy: $(BUILD_TEST)/DriverGreedy.o $(BUILD)/Greedy.o $(BUILD)/Output.o $(BUILD)/Cost.o $(BUILD)/Input.o
 	g++ -o $(BIN_TEST)/TestGreedy $(BUILD_TEST)/DriverGreedy.o $(BUILD)/Greedy.o $(BUILD)/Output.o $(BUILD)/Cost.o $(BUILD)/Input.o
@@ -33,7 +33,7 @@ $(BIN_TEST)/TestInput: $(BUILD_TEST)/DriverInput.o $(BUILD)/Input.o
 	g++ -o $(BIN_TEST)/TestInput $(BUILD_TEST)/DriverInput.o $(BUILD)/Input.o
 
 #DRIVER
-$(BUILD_TEST)/DriverBacktracking.o: $(INCLUDE)/BacktrackingMIFAPOpt.hh $(TEST)/DriverBacktracking.cc
+$(BUILD_TEST)/DriverBacktracking.o: $(INCLUDE)/Backtracking.hh $(TEST)/DriverBacktracking.cc
 	g++ -c $(OPTIONS) $(TEST)/DriverBacktracking.cc -o $(BUILD_TEST)/DriverBacktracking.o
 
 $(BUILD_TEST)/DriverGreedy.o: $(INCLUDE)/Greedy.hh $(TEST)/DriverGreedy.cc
@@ -53,8 +53,8 @@ $(BUILD_TEST)/DriverInput.o: $(INCLUDE)/Input.hh $(TEST)/DriverInput.cc
 
 
 #SOURCE
-$(BUILD)/BacktrackingMIFAPOpt.o: $(INCLUDE)/BacktrackingMIFAPOpt.hh $(SRC)/BacktrackingMIFAPOpt.cc $(LIB)/BacktrackingOpt.hh $(INCLUDE)/Input.hh $(INCLUDE)/Output.hh $(INCLUDE)/Cost.hh
-	g++ -c $(OPTIONS) $(SRC)/BacktrackingMIFAPOpt.cc -o $(BUILD)/BacktrackingMIFAPOpt.o
+$(BUILD)/Backtracking.o: $(INCLUDE)/Backtracking.hh $(SRC)/Backtracking.cc $(INCLUDE)/Input.hh $(INCLUDE)/Output.hh $(INCLUDE)/Cost.hh $(INCLUDE)/Greedy.hh
+	g++ -c $(OPTIONS) $(SRC)/Backtracking.cc -o $(BUILD)/Backtracking.o
 
 $(BUILD)/Greedy.o: $(INCLUDE)/Input.hh $(INCLUDE)/Output.hh $(INCLUDE)/Cost.hh $(INCLUDE)/Greedy.hh $(SRC)/Greedy.cc
 	g++ -c $(OPTIONS) $(SRC)/Greedy.cc -o $(BUILD)/Greedy.o
