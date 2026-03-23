@@ -9,8 +9,7 @@ BacktrackingMIFAPOpt::BacktrackingMIFAPOpt(const Input& in, unsigned fl)
                      : BacktrackingOpt(in,fl),
                        mat_ch_cost(in.NetworkSize(),std::vector<std::pair<class Cost, int>>(in.TotCh())),
                        vec_ch_index(in.NetworkSize(),-1)
-{
-}
+{}
 
 void BacktrackingMIFAPOpt::FirstOfLevel()
 {
@@ -45,8 +44,8 @@ void BacktrackingMIFAPOpt::FirstOfLevel()
 
 bool BacktrackingMIFAPOpt::NextOfLevel()
 {
-   // se non mi fermo prima del -1 vado fuori memoria
-   if (vec_ch_index[level] < in.TotCh() - 1) {
+   // se non mi fermo prima del -1 vado fuori memoria, inutile se uso l`uscita anticipata
+   if (vec_ch_index[level] < in.TotCh() -1 ) {
       //qui ho avuto vari bug logici se tolgo prima rischi di avere casi in cui l'UpOne toglie due volte la stessa misura
       // ORDINE OP: togli old ch cost -> assegna il NUOVO CANALE -> Aggiungi il nuovo costo
 
@@ -74,10 +73,11 @@ bool BacktrackingMIFAPOpt::NextOfLevel()
          cerr << "out.cost: " << out.SolutionCost() << endl;
       }
       assert(cost == out.SolutionCost());
+      return true; //questo è per testare che gestisca anche i casi in cui arriva in fondo, ho avuto dei bug che il caso anticipato non ha
       #endif
       //il -1 serve solo per sapere se inizializzato altrimenti ho un bug logico se nella prima catena ho anche un solo un valore non valido
       return !(NonImprovingBranch() && (best.Ch(0) != -1)); //essendo ordinati puoi abbandonarli prima
-      // return true;
+
    }
    return false;
 }

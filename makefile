@@ -1,4 +1,4 @@
-OPTIONS=-Wall -Wfatal-errors -O3 -std=c++23 #-DDEBUG_BACKTRACKING -DDEBUG
+OPTIONS=-Wall -Wfatal-errors -O3 -std=c++23 #-DDEBUG_BACKTRACKING #-DDEBUG
 
 SRC=./src
 INCLUDE=./include
