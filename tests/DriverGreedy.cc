@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
        stop = steady_clock::now();
        duration = duration_cast<microseconds>(stop - start).count();
 
-       result << argv[1] << " " << "greedy: " << duration << " us " << solver.Solution().TotCost() << " ";
+       result << argv[1] << " " << "greedy: " << duration << " us " << solver.Solution().SolutionCost() << " ";
 
        solver.ResetSolver();
 
@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
        stop = steady_clock::now();
        duration = duration_cast<microseconds>(stop - start).count();
 
-       result << "degree: " << duration << " us " << solver.Solution().TotCost() << " ";
+       result << "degree: " << duration << " us " << solver.Solution().SolutionCost() << " ";
 
        solver.ResetSolver();
 
@@ -48,7 +48,7 @@ int main(int argc, char* argv[])
        stop = steady_clock::now();
        duration = duration_cast<microseconds>(stop - start).count();
 
-       result << "dsatur: " << duration << " us " << solver.Solution().TotCost() << endl;
+       result << "dsatur: " << duration << " us " << solver.Solution().SolutionCost() << endl;
 
        solver.ResetSolver();
     }

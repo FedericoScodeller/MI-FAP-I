@@ -8,50 +8,6 @@ Output::Output(const Input& in)
    vec_ch.resize(input.NetworkSize(),-1);
 }
 
-void Output::AssignCh(unsigned tx, unsigned ch)
-{
-   if (vec_ch[tx] == static_cast<int>(ch))
-       return;
-
-   if(vec_ch[tx] != -1)
-      RemoveCh(tx);
-
-   vec_ch[tx]=ch;
-   tot_cost += ChCost(tx,ch);
-}
-
-void Output::RemoveCh(unsigned tx)
-{
-   if(vec_ch[tx] == -1)
-      return;
-
-   tot_cost -= ChCost(tx,vec_ch[tx]);
-   vec_ch[tx]=-1;
-
-}
-
-void Output::AssignChCost(unsigned tx, unsigned ch, Cost cost)
-{
-   if (vec_ch[tx] == static_cast<int>(ch))
-       return;
-
-   if(vec_ch[tx] != -1)
-      RemoveCh(tx);
-
-   vec_ch[tx]=ch;
-   tot_cost += cost;
-}
-
-void Output::RemoveChCost(unsigned tx, Cost cost)
-{
-   if(vec_ch[tx] == -1)
-      return;
-
-   tot_cost -= cost;
-   vec_ch[tx]=-1;
-
-}
-
 Cost Output::ChCost(unsigned tx, int ch) const
 {
    Cost tot_cost;
@@ -87,39 +43,36 @@ Cost Output::ChCost(unsigned tx, int ch) const
    return tot_cost;
 }
 
-void Output::TotalCostCheck(void) const
+Cost Output::SolutionCost(void) const
 {
-   Cost cost_check;
-
-   assert(this->ValidSolution());
-
+   Cost solution_cost;
    for (unsigned tx = 0; tx < input.NetworkSize(); tx++)
    {
-      for(auto t:input.AdjTxTo(tx))
-      {
-         if (vec_ch[t] != -1)
+      if (vec_ch[tx] != -1) {
+         for(auto t:input.AdjTxTo(tx))
          {
-            if (input.ChSep(t, tx) && abs(vec_ch[tx] - vec_ch[t]) < input.ChSep(t, tx))
-               cost_check += Cost(1);
+            if (vec_ch[t] != -1)
+            {
+               if (input.ChSep(t, tx) && abs(vec_ch[tx] - vec_ch[t]) < input.ChSep(t, tx))
+                  solution_cost += Cost(1);
 
-            if(vec_ch[tx] == vec_ch[t])
-               cost_check += Cost(0, input.SameChInt(t,tx));
+               if(vec_ch[tx] == vec_ch[t])
+                  solution_cost += Cost(0, input.SameChInt(t,tx));
 
-            if(abs(vec_ch[tx]- vec_ch[t]) == 1)
-               cost_check += Cost(0, input.AdjChInt(t,tx));
+               if(abs(vec_ch[tx]- vec_ch[t]) == 1)
+                  solution_cost += Cost(0, input.AdjChInt(t,tx));
+            }
          }
+
       }
    }
-
-   assert(cost_check == tot_cost);
+   return solution_cost;
 }
 
 void Output::Reset(void)
 {
    for(auto& tx:vec_ch)
       tx=-1;
-
-   tot_cost = 0;
 }
 
 bool Output::ValidSolution(void) const
@@ -135,17 +88,19 @@ bool Output::ValidSolution(void) const
 Output& Output::operator=(const Output& out)
 {
    vec_ch = out.vec_ch;
-   tot_cost = out.tot_cost;
    return *this;
 }
 
 std::ostream &operator<<(std::ostream &os, const Output &out)
 {
-   os << "Total cost: " << out.tot_cost << std::endl;
+   os << "Total cost: " << out.SolutionCost() << std::endl;
+
+   #ifdef DEBUG
    os << "Assigned ch: [ ";
    for(auto ch : out.vec_ch)
       os << ch << " ";
    os << "]" << std::endl;
+   #endif
 
    return os;
 }

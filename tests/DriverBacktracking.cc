@@ -13,16 +13,12 @@ int main(int argc, char* argv[])
    Input network(jsonfile);
    BacktrackingMIFAPOpt solver(network, network.NetworkSize() - 1);
 
-
-  if (solver.Search())
-  {
-    Output out = solver.BestSolution();
-    out.TotalCostCheck();
-    cout << "Best solution found " << out
-         <<   " (" << solver.NumNodes() << " nodes visited)" << endl;
-  }
-  else
-    cout << "No solution exists"
-         << " (" << solver.NumNodes() << " nodes visited)" << endl;
-  return 0;
+   unsigned timer_sec = 10;
+   if (solver.SearchTimed(timer_sec))
+   {
+      cout << "Best solution found " << solver.BestSolution() <<   " (" << solver.NumNodes() << " nodes visited)" << endl;
+   }
+   else
+      cout << "No solution exists" << " (" << solver.NumNodes() << " nodes visited)" << endl;
+   return 0;
 }

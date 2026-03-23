@@ -16,7 +16,7 @@ void Greedy::GreedySolver(void)
       ch = BestCh4Tx(tx);
       out.AssignCh(tx,ch);
    }
-
+   assert(out.ValidSolution());
 }
 
 void Greedy::DegreeSolver(void)
@@ -36,6 +36,7 @@ void Greedy::DegreeSolver(void)
       ch = BestCh4Tx(tx);
       out.AssignCh(tx,ch);
    }
+   assert(out.ValidSolution());
 }
 
 void Greedy::DSaturSolver(void)
@@ -53,6 +54,7 @@ void Greedy::DSaturSolver(void)
       out.AssignCh(tx,ch);
       UpdateSatur(satur_vec,mat_blk_ch,tx,in.AdjTxFrom(tx));
    }
+   assert(out.ValidSolution());
 }
 
 int Greedy::BestCh4Tx(unsigned tx) const

@@ -72,11 +72,9 @@ bool BacktrackingOpt<Input,Output,CFtype>::Search()
             {
 
                if (first_sol_found)
-                  cerr << "New best solution " << out
-                     << " (current cost " << cost << ", previous " << best_cost << ")" << endl;
+                  cerr << "New best solution " << out << " (current cost " << cost << ", previous " << best_cost << ")" << endl;
                else
-                  cerr << "First solution " << out
-                     << " (current cost " << cost << ") " << endl;
+                  cerr << "First solution " << out << " (current cost " << cost << ") " << endl;
                first_sol_found = true;
                best_cost = cost;
                best = out;
