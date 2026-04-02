@@ -11,6 +11,15 @@ class BacktrackingMIFAPOpt : public BacktrackingOpt<Input,Output, Cost>
  public:
   BacktrackingMIFAPOpt(const Input& in, unsigned fl);
   bool SearchTimed(unsigned timer_sec);
+  
+
+
+  //TELEMETRY
+  unsigned long long FullSolutionExaminated(void) const {return full_solution_examinated;};
+  unsigned long long NodesSkippedPerLevel(unsigned n) const {return nodes_skipped_per_level[n];};
+  int Level() const {return level;};
+  int VecChIndex(int n) const {return vec_ch_index[n];};
+
  protected:
   // hot-spots
   void FirstOfLevel() override;
@@ -25,6 +34,10 @@ class BacktrackingMIFAPOpt : public BacktrackingOpt<Input,Output, Cost>
 
   std::vector<std::vector<std::pair<class Cost,int>>> mat_ch_cost;
   std::vector<int> vec_ch_index;
-  std::vector<std::pair<int, unsigned>> vec_tx_degree_order; //<degree , tx>
+  std::vector<std::pair<int, unsigned>> vec_tx_order; //<degree , tx>
+
+  //TELEMETRY
+  unsigned long long full_solution_examinated;
+  std::vector<unsigned long long> nodes_skipped_per_level;
 };
 #endif

@@ -5,7 +5,7 @@
 #include <vector>
 
 using nlohmann::json;
-
+//uso RVO, implementato da compilatori moderni e versioni più recenti dello std c++ (e per recenti intendo 2011), se non disponibile va cambiate alcune cose nei return dei vector
 class Input
 {
 

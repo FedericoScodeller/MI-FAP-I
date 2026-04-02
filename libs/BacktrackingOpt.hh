@@ -8,10 +8,10 @@ template <typename Input, typename Output, typename CFtype>
 class BacktrackingOpt
 {
 public:
-  BacktrackingOpt(const Input& i, unsigned fl);
-  bool Search();
-  Output BestSolution() { return best; }
-  unsigned NumNodes() const { return count; }
+   BacktrackingOpt(const Input& i, unsigned fl);
+   bool Search();
+   Output BestSolution() { return best; }
+   unsigned NumNodes() const { return count; }
 protected:
   virtual void GoDownOneLevel() { level++; }
   virtual void GoUpOneLevel(){ level--; }

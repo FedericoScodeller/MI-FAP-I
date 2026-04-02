@@ -2,7 +2,7 @@
 
 bin=./tests/bin/TestBacktracking
 data="./data"
-result="./results/Backtracking/ver_2.1/"
+result="./results/Backtracking/ver_2.0.1/"
 
 for file in "$data"/*.json; do
    echo "working on " $file
