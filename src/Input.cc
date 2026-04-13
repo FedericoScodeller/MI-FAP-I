@@ -60,7 +60,7 @@ Input::Input(const json& data)
          tx_cell.push_back(cells[i]["id"]);
          tx_site.push_back(cells[i]["site"]);
          tx_type.push_back(j == 0 ? bcch : tch);
-         mat_blk_ch.push_back( tx_blk_ch);
+         mat_blk_ch.push_back(tx_blk_ch);
       }
    }
 

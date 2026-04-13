@@ -29,12 +29,13 @@ class BacktrackingMIFAPOpt : public BacktrackingOpt<Input,Output, Cost>
   // cold-spots
   bool NonImprovingBranch() override;
   void GoUpOneLevel() override;
+  void GoDownOneLevel() override;
 
   bool FullSolution() override;
 
   std::vector<std::vector<std::pair<class Cost,int>>> mat_ch_cost;
   std::vector<int> vec_ch_index;
-  std::vector<std::pair<int, unsigned>> vec_tx_order; //<degree , tx>
+  std::vector<int> vec_tx_order;
 
   //TELEMETRY
   unsigned long long full_solution_examinated;

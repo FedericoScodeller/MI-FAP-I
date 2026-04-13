@@ -50,6 +50,7 @@ void Greedy::DSaturSolver(void)
 
    while ((tx = MaxSatur(satur_vec)) != -1)
    {
+      std::cerr << "work on tx " << tx << " satur " << satur_vec[tx] << std::endl;
       ch = BestCh4Tx(tx);
       out.AssignCh(tx,ch);
       UpdateSatur(satur_vec,mat_blk_ch,tx,in.AdjTxFrom(tx));

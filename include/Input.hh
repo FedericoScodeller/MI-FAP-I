@@ -6,6 +6,8 @@
 
 using nlohmann::json;
 //uso RVO, implementato da compilatori moderni e versioni più recenti dello std c++ (e per recenti intendo 2011), se non disponibile va cambiate alcune cose nei return dei vector
+
+//From TX_A to TX_B mean that TX_A cause interf to TX_B or equiv. TX_B is effected by TX_A (not the otehr way around), CHECK THIS CONSISTENCY IN THE CODE
 class Input
 {
 
@@ -23,8 +25,8 @@ class Input
       int AdjChInt(unsigned tx_from, unsigned tx_to) const {return adj_ch_int[tx_from][tx_to];};
       bool ChBlocked (unsigned tx, int ch) const {return mat_blk_ch[tx][ch];};
 
-      std::vector<unsigned> AdjTxFrom(unsigned tx) const {return adj_mat_from[tx];};
-      std::vector<unsigned> AdjTxTo(unsigned tx) const {return adj_mat_to[tx];};
+      std::vector<unsigned> AdjTxFrom(unsigned tx) const {return adj_mat_from[tx];}; // it's a list of all the transmitters that recive interf from tx
+      std::vector<unsigned> AdjTxTo(unsigned tx) const {return adj_mat_to[tx];}; // it's a list of all the transmitters that cause interf to tx
 
       std::vector<std::vector<bool>> MatBlkCh(void) const {return mat_blk_ch;};
 
@@ -43,7 +45,7 @@ class Input
 
       std::vector<std::vector<bool>> mat_blk_ch;
 
-      std::vector<std::vector<unsigned>> adj_mat_from;
+      std::vector<std::vector<unsigned>> adj_mat_from; 
       std::vector<std::vector<unsigned>> adj_mat_to;
       std::vector<int> degree;
 

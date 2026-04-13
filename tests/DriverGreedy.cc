@@ -25,23 +25,23 @@ int main(int argc, char* argv[])
     long duration;
     for(int i = 0; i < n; i++)
     {
-       start = steady_clock::now();
-       solver.GreedySolver();
-       stop = steady_clock::now();
-       duration = duration_cast<microseconds>(stop - start).count();
+    //    start = steady_clock::now();
+    //    solver.GreedySolver();
+    //    stop = steady_clock::now();
+    //    duration = duration_cast<microseconds>(stop - start).count();
 
-       result << argv[1] << " " << "greedy: " << duration << " us " << solver.Solution().SolutionCost() << " ";
+    //    result << argv[1] << " " << "greedy: " << duration << " us " << solver.Solution().SolutionCost() << " ";
 
-       solver.ResetSolver();
+    //    solver.ResetSolver();
 
-       start = steady_clock::now();
-       solver.DegreeSolver();
-       stop = steady_clock::now();
-       duration = duration_cast<microseconds>(stop - start).count();
+    //    start = steady_clock::now();
+    //    solver.DegreeSolver();
+    //    stop = steady_clock::now();
+    //    duration = duration_cast<microseconds>(stop - start).count();
 
-       result << "degree: " << duration << " us " << solver.Solution().SolutionCost() << " ";
+    //    result << "degree: " << duration << " us " << solver.Solution().SolutionCost() << " ";
 
-       solver.ResetSolver();
+    //    solver.ResetSolver();
 
        start = steady_clock::now();
        solver.DSaturSolver();

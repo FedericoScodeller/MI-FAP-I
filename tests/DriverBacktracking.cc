@@ -13,7 +13,7 @@ int main(int argc, char* argv[])
    Input network(jsonfile);
    BacktrackingMIFAPOpt solver(network, network.NetworkSize() - 1);
 
-   unsigned timer_sec = 3* 60;
+   unsigned timer_sec = 3 * 60;
 
    if (solver.SearchTimed(timer_sec))
       cout << "Best solution found " << solver.BestSolution() <<   " (" << solver.NumNodes() << " nodes visited)" << endl;

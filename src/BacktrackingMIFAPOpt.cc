@@ -13,20 +13,13 @@ BacktrackingMIFAPOpt::BacktrackingMIFAPOpt(const Input& in, unsigned fl)
                        nodes_skipped_per_level(in.NetworkSize(),0)
 
 {
-// DEGREE 
-//   for(unsigned tx = 0; tx < in.NetworkSize(); ++tx)
-//     vec_tx_order[tx]={in.Degree(tx),tx};
-
-//   sort(vec_tx_order.rbegin(),vec_tx_order.rend());
-
   //TELEMETRY
   full_solution_examinated = 0;
 }
 
 void BacktrackingMIFAPOpt::FirstOfLevel()
 {
-   // unsigned tx = vec_tx_order[level].second; // DEGREE 
-   unsigned tx = level;
+   unsigned tx = vec_tx_order[level];
 
    for(int ch = 0; ch < in.TotCh(); ++ch)
       mat_ch_cost[level][ch]={out.ChCost(tx,ch),ch};
@@ -50,6 +43,7 @@ void BacktrackingMIFAPOpt::FirstOfLevel()
       cerr << "out.cost: " << out.SolutionCost() << endl;
    }
    assert(cost == out.SolutionCost());
+   cerr << "first of level assiment is " <<level << ": " << out.Ch(tx) <<endl;
    #endif
 
 }
@@ -60,8 +54,7 @@ bool BacktrackingMIFAPOpt::NextOfLevel()
   if (vec_ch_index[level] < in.TotCh() - 1 ) {
       //qui ho avuto vari bug logici se tolgo prima rischi di avere casi in cui l'UpOne toglie due volte la stessa misura
       // ORDINE OP: togli old ch cost -> assegna il NUOVO CANALE -> Aggiungi il nuovo costo
-      // int tx = vec_tx_order[level].second; // DEGREE 
-      int tx = level;
+      int tx = vec_tx_order[level]; // DEGREE 
       int ch = mat_ch_cost[level][vec_ch_index[level]].second;
 
       cost -= mat_ch_cost[level][vec_ch_index[level]].first;
@@ -88,6 +81,7 @@ bool BacktrackingMIFAPOpt::NextOfLevel()
       return true; //questo è per testare che gestisca anche i casi in cui arriva in fondo, ho avuto dei bug che il caso anticipato non ha
       #endif
       //il -1 serve solo per sapere se inizializzato altrimenti ho un bug logico se nella prima catena ho anche un solo un valore non valido
+      //è uno spoco trucco logico che deve esssere migliorato magari con una semplice funzione out.CompleteSolution o migliorando la valid solution
       return !(NonImprovingBranch() && (best.Ch(0) != -1)); //essendo ordinati puoi abbandonarli prima
    }
    return false;
@@ -96,9 +90,9 @@ bool BacktrackingMIFAPOpt::NextOfLevel()
 bool BacktrackingMIFAPOpt::Feasible()
 {
    //if empty solution is of course valid, else just check the last added
-   // int tx = vec_tx_order[level].second; // DEGREE 
-   int tx = level;
+   int tx = vec_tx_order[level]; 
    int ch = out.Ch(tx);
+
    return level == -1 || !in.ChBlocked(tx, ch);
 }
 
@@ -114,11 +108,13 @@ bool BacktrackingMIFAPOpt::NonImprovingBranch()
 
 void BacktrackingMIFAPOpt::GoUpOneLevel()
 {
-   // int tx = vec_tx_order[level].second; // DEGREE 
-   int tx = level;
+   int tx = vec_tx_order[level];
    cost -= mat_ch_cost[level][vec_ch_index[level]].first;
    out.RemoveCh(tx);
+   //vec_tx_order[--level] = -1; //pointless assigment i did it for no reason
    --level;
+
+
 
    #ifdef DEBUG_BACKTRACKING
    if(!(cost == out.SolutionCost()))
@@ -129,6 +125,60 @@ void BacktrackingMIFAPOpt::GoUpOneLevel()
    }
    assert(cost == out.SolutionCost());
    #endif
+
+}
+
+void BacktrackingMIFAPOpt::GoDownOneLevel()
+{
+   unsigned tx, best_tx;
+   int tx_sat, best_tx_sat, start, end;
+   std::vector<bool> vec_ch_sat;
+   bool first_sat_found = false;
+
+   for(tx = 0; tx < in.NetworkSize(); ++tx)
+   {
+      //CHECK IF VALID TX
+      if(out.Ch(tx) == -1)
+      {
+         //START CALC SAT
+         vec_ch_sat = in.MatBlkCh()[tx];
+
+         for(auto t : in.AdjTxTo(tx)) //questi sono i tramsemttitori che causano saturazione a tx, from t to tx
+         {
+            if(out.Ch(t) != -1 && in.ChSep(t,tx))
+            {
+               start = (out.Ch(t) - in.ChSep(t,tx) + 1 >= 0) ? out.Ch(t) - in.ChSep(t,tx) + 1 : 0;
+               
+               end = (out.Ch(t) + in.ChSep(t,tx) - 1 < in.TotCh()) ? out.Ch(t) + in.ChSep(t,tx) - 1 : in.TotCh() - 1;
+
+               for(int ch = start; ch <= end; ++ch)
+                  vec_ch_sat[ch] = true;
+            }
+         }
+         //COUNT SAT CH FOR A TX
+         tx_sat = std::count(vec_ch_sat.begin(),vec_ch_sat.end(),true);
+
+         //CONFRONT WITH BEST IF AVAIALABLE
+         if(first_sat_found)
+         {
+            if(tx_sat > best_tx_sat || ( tx_sat == best_tx_sat && in.Degree(tx) > in.Degree(best_tx) ))
+            {
+               best_tx = tx;
+               best_tx_sat = tx_sat;
+            }
+         }
+         else
+         {
+            first_sat_found = true;
+            best_tx = tx;
+            best_tx_sat = tx_sat;
+         }
+      }
+   }
+
+   assert(first_sat_found);
+
+   vec_tx_order[++level] = best_tx;
 
 }
 
