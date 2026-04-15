@@ -36,7 +36,7 @@ class BacktrackingMIFAPOpt : public BacktrackingOpt<Input,Output, Cost>
   std::vector<std::vector<std::pair<class Cost,int>>> mat_ch_cost;
   std::vector<int> vec_ch_index;
   std::vector<int> vec_tx_order;
-  std::vector<std::vector<std::vector<bool>>> satur_memory_vector; //As in the MatBlkCh il true rappresent a saturated ch
+  std::vector<std::vector<std::vector<bool>>> satur_memory_vector; //As in the MatBlkCh true rappresent a saturated ch
 
   //TELEMETRY
   unsigned long long full_solution_examinated;
