@@ -1,6 +1,7 @@
 #include "../include/BacktrackingMIFAPOpt.hh"
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <ostream>
 #include <utility>
 #include <vector>
@@ -10,6 +11,7 @@ BacktrackingMIFAPOpt::BacktrackingMIFAPOpt(const Input& in, unsigned fl)
                        mat_ch_cost(in.NetworkSize(),std::vector<std::pair<class Cost, int>>(in.TotCh())),
                        vec_ch_index(in.NetworkSize(),-1),
                        vec_tx_order(in.NetworkSize()),
+                       satur_memory_vector(in.NetworkSize(),in.MatBlkCh()),
                        nodes_skipped_per_level(in.NetworkSize(),0)
 
 {
@@ -19,6 +21,7 @@ BacktrackingMIFAPOpt::BacktrackingMIFAPOpt(const Input& in, unsigned fl)
 
 void BacktrackingMIFAPOpt::FirstOfLevel()
 {
+   //THIS METHOD WORK ON THE CHANNEL ORDER
    unsigned tx = vec_tx_order[level];
 
    for(int ch = 0; ch < in.TotCh(); ++ch)
@@ -50,11 +53,12 @@ void BacktrackingMIFAPOpt::FirstOfLevel()
 
 bool BacktrackingMIFAPOpt::NextOfLevel()
 {
+   //THIS METHOD WORK ON THE CHANNEL ORDER or to be precise keep going along the already establish order
    // se non mi fermo prima del -1 vado fuori memoria, inutile se uso l`uscita anticipata
   if (vec_ch_index[level] < in.TotCh() - 1 ) {
       //qui ho avuto vari bug logici se tolgo prima rischi di avere casi in cui l'UpOne toglie due volte la stessa misura
-      // ORDINE OP: togli old ch cost -> assegna il NUOVO CANALE -> Aggiungi il nuovo costo
-      int tx = vec_tx_order[level]; // DEGREE 
+      // ORDINE OPERATION: togli old ch cost -> assegna il NUOVO CANALE -> Aggiungi il nuovo costo
+      int tx = vec_tx_order[level]; // DEGREE
       int ch = mat_ch_cost[level][vec_ch_index[level]].second;
 
       cost -= mat_ch_cost[level][vec_ch_index[level]].first;
@@ -90,7 +94,7 @@ bool BacktrackingMIFAPOpt::NextOfLevel()
 bool BacktrackingMIFAPOpt::Feasible()
 {
    //if empty solution is of course valid, else just check the last added
-   int tx = vec_tx_order[level]; 
+   int tx = vec_tx_order[level];
    int ch = out.Ch(tx);
 
    return level == -1 || !in.ChBlocked(tx, ch);
@@ -108,6 +112,7 @@ bool BacktrackingMIFAPOpt::NonImprovingBranch()
 
 void BacktrackingMIFAPOpt::GoUpOneLevel()
 {
+   //THIS "WORK" ON THE ORDER OF TX
    int tx = vec_tx_order[level];
    cost -= mat_ch_cost[level][vec_ch_index[level]].first;
    out.RemoveCh(tx);
@@ -130,56 +135,58 @@ void BacktrackingMIFAPOpt::GoUpOneLevel()
 
 void BacktrackingMIFAPOpt::GoDownOneLevel()
 {
-   unsigned tx, best_tx;
-   int tx_sat, best_tx_sat, start, end;
-   std::vector<bool> vec_ch_sat;
-   bool first_sat_found = false;
-
-   for(tx = 0; tx < in.NetworkSize(); ++tx)
+   // NEXT LEVEL
+   ++level;
+   // UPDATE SAT
+   // needed only if ch was assigned
+   if (level > 0)
    {
-      //CHECK IF VALID TX
-      if(out.Ch(tx) == -1)
+      int tx_updated = vec_tx_order[level - 1];
+      int start, end;
+      std::vector<unsigned> update_list = in.AdjTxFrom(tx_updated);
+
+      // NEED TO LOAD MEMORY FIRST
+      satur_memory_vector[level] = satur_memory_vector[level - 1];
+
+      for(auto tx: update_list)
       {
-         //START CALC SAT
-         vec_ch_sat = in.MatBlkCh()[tx];
-
-         for(auto t : in.AdjTxTo(tx)) //questi sono i tramsemttitori che causano saturazione a tx, from t to tx
+         if (out.Ch(tx) == -1  && in.ChSep(tx_updated,tx)) //altrimenti è ignorato a priori nel calcolo del DSatur, il sep è per i valori che hanno solo interferenza non li considero che saturano il ch
          {
-            if(out.Ch(t) != -1 && in.ChSep(t,tx))
-            {
-               start = (out.Ch(t) - in.ChSep(t,tx) + 1 >= 0) ? out.Ch(t) - in.ChSep(t,tx) + 1 : 0;
-               
-               end = (out.Ch(t) + in.ChSep(t,tx) - 1 < in.TotCh()) ? out.Ch(t) + in.ChSep(t,tx) - 1 : in.TotCh() - 1;
+            start = (out.Ch(tx_updated) - in.ChSep(tx_updated,tx) + 1 >= 0) ? out.Ch(tx_updated) - in.ChSep(tx_updated,tx) + 1 : 0;
+            end = (out.Ch(tx_updated) + in.ChSep(tx_updated,tx) - 1 < in.TotCh()) ? out.Ch(tx_updated) + in.ChSep(tx_updated,tx) - 1 : in.TotCh() - 1;
 
-               for(int ch = start; ch <= end; ++ch)
-                  vec_ch_sat[ch] = true;
-            }
+            for(int ch = start; ch <= end; ch++)
+               satur_memory_vector[level][tx][ch] = true;
          }
-         //COUNT SAT CH FOR A TX
-         tx_sat = std::count(vec_ch_sat.begin(),vec_ch_sat.end(),true);
-
-         //CONFRONT WITH BEST IF AVAIALABLE
-         if(first_sat_found)
+      }
+   }
+   int satur, best_satur, tx_best;
+   bool first_best_found = false;
+   // MAX SAT
+   for (size_t tx = 0; tx < in.NetworkSize(); ++tx)
+   {
+      if (out.Ch(tx) == -1)
+      {
+         satur = std::count(satur_memory_vector[level][tx].begin(),satur_memory_vector[level][tx].end(),true);
+         if (first_best_found)
          {
-            if(tx_sat > best_tx_sat || ( tx_sat == best_tx_sat && in.Degree(tx) > in.Degree(best_tx) ))
+            if(satur > best_satur || (satur == best_satur && in.Degree(tx) > in.Degree(tx_best)))
             {
-               best_tx = tx;
-               best_tx_sat = tx_sat;
+               best_satur = satur;
+               tx_best = tx;
             }
          }
          else
          {
-            first_sat_found = true;
-            best_tx = tx;
-            best_tx_sat = tx_sat;
+            best_satur = satur;
+            tx_best = tx;
+            first_best_found = true;
          }
       }
    }
-
-   assert(first_sat_found);
-
-   vec_tx_order[++level] = best_tx;
-
+   assert(first_best_found); //IS IT EVEN USEFULL?
+   // NEXT TX
+   vec_tx_order[level] = tx_best;
 }
 
 bool BacktrackingMIFAPOpt::FullSolution()
@@ -216,7 +223,7 @@ bool BacktrackingMIFAPOpt::SearchTimed(unsigned timer_sec)
       //ONLY FOR TELEMETRY
       if(!Feasible())
          ++nodes_skipped_per_level[level];
-         
+
 
       if (backtrack)
       {
@@ -232,7 +239,7 @@ bool BacktrackingMIFAPOpt::SearchTimed(unsigned timer_sec)
                //FOR TELEMETRY
                if(NonImprovingBranch())
                   nodes_skipped_per_level[level] += in.TotCh() - vec_ch_index[level];
-                  
+
                GoUpOneLevel();
             }
          }
