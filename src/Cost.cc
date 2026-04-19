@@ -58,3 +58,8 @@ Cost operator+(const Cost& a,const Cost& b)
 {
     return Cost(a.hard + b.hard, a.interf + b.interf);
 }
+
+Cost operator-(const Cost& a,const Cost& b)
+{
+    return Cost(a.hard - b.hard, a.interf - b.interf);
+}

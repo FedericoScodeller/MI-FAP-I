@@ -17,6 +17,7 @@ class Greedy
       void GreedySolver(void);
       void DegreeSolver(void);
       void DSaturSolver(void);
+      void RegretSolver(void);
 
       void ResetSolver(void){out.Reset();};
 
@@ -25,8 +26,10 @@ class Greedy
       Output out;
 
       int BestCh4Tx(unsigned tx) const;
-      int MaxSatur(const std::vector<unsigned>& satur_vec);
-      void UpdateSatur(std::vector<unsigned>& satur_vec, std::vector<std::vector<bool>>& mat_blk_ch, int tx_updated, const std::vector<unsigned>& update_list);
+      int MaxSatur(const std::vector<unsigned>& satur_vec) const;
+      int NextTxRegret(const std::vector<Cost>& vector_delta_cost, const std::vector<unsigned>& vector_satur) const;
+      void UpdateSatur(std::vector<unsigned>& satur_vec, std::vector<std::vector<bool>>& mat_blk_ch, int tx_updated, const std::vector<unsigned>& update_list) const;
+      void UpdateRegretData(std::vector<std::vector<Cost>>& matrix_cost, std::vector<Cost>& vector_delta_cost, std::vector<unsigned>& vector_satur, int tx_updated, const std::vector<unsigned>& update_list) const;
 
 };
 

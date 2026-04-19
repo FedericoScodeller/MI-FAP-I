@@ -33,10 +33,11 @@ class BacktrackingMIFAPOpt : public BacktrackingOpt<Input,Output, Cost>
 
   bool FullSolution() override;
 
-  std::vector<std::vector<std::pair<class Cost,int>>> mat_ch_cost;
+  std::vector<std::vector<std::pair<class Cost,int>>> mat_ch_cost; //CHANGE NAME IS MORE A MEMORY FOR THE COST AT A CERTAIN LEVEL FOR WHEN YOU BACKTRACK
   std::vector<int> vec_ch_index;
   std::vector<int> vec_tx_order;
-  std::vector<std::vector<std::vector<bool>>> satur_memory_vector; //As in the MatBlkCh true rappresent a saturated ch
+  std::vector<std::vector<int>> satur_mem; //0 is free, 1+ is saturation
+  std::vector<int> satur_vec; //keep count of current saturation
 
   //TELEMETRY
   unsigned long long full_solution_examinated;

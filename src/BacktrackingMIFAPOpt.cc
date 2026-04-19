@@ -11,12 +11,21 @@ BacktrackingMIFAPOpt::BacktrackingMIFAPOpt(const Input& in, unsigned fl)
                        mat_ch_cost(in.NetworkSize(),std::vector<std::pair<class Cost, int>>(in.TotCh())),
                        vec_ch_index(in.NetworkSize(),-1),
                        vec_tx_order(in.NetworkSize()),
-                       satur_memory_vector(in.NetworkSize(),in.MatBlkCh()),
+                       satur_mem(in.NetworkSize(), std::vector<int>(in.TotCh())),
+                       satur_vec(in.NetworkSize()),
                        nodes_skipped_per_level(in.NetworkSize(),0)
 
 {
-  //TELEMETRY
-  full_solution_examinated = 0;
+   //SATUR MEM initialized with blocked channels
+   for(size_t row = 0; row < in.NetworkSize(); ++row)
+      for(int col = 0; col < in.TotCh(); ++col)
+         satur_mem[row][col] = static_cast<int>(in.ChBlocked(row,col)); //explicit conversion is kinda pointless only to be a reminder
+
+   for (size_t tx = 0; tx < in.NetworkSize(); ++tx)
+      satur_vec[tx]=std::count_if(satur_mem[tx].begin(),satur_mem[tx].end(),[](int x) {return x != 0;});
+
+   //TELEMETRY
+   full_solution_examinated = 0;
 }
 
 void BacktrackingMIFAPOpt::FirstOfLevel()
@@ -116,8 +125,32 @@ void BacktrackingMIFAPOpt::GoUpOneLevel()
    int tx = vec_tx_order[level];
    cost -= mat_ch_cost[level][vec_ch_index[level]].first;
    out.RemoveCh(tx);
-   //vec_tx_order[--level] = -1; //pointless assigment i did it for no reason
    --level;
+
+   //UPDATE SATUR MEM, work with the saturation of the precedent level, it's lock only after the GoingDownOne
+   // è un ragionamento di fino di non immediata chiarezza
+   if (level >= 0) //if you are back at the root of course there is nothing to eliminate
+   {
+      int tx_updated = vec_tx_order[level];
+      int start, end;
+      std::vector<unsigned> update_list = in.AdjTxFrom(tx_updated);
+
+      for(auto tx: update_list)
+      {
+         if (out.Ch(tx) == -1  && in.ChSep(tx_updated,tx)) //altrimenti è ignorato a priori nel calcolo del DSatur, il sep è per i valori che hanno solo interferenza non li considero che saturano il ch
+         {
+            start = (out.Ch(tx_updated) - in.ChSep(tx_updated,tx) + 1 >= 0) ? out.Ch(tx_updated) - in.ChSep(tx_updated,tx) + 1 : 0;
+            end = (out.Ch(tx_updated) + in.ChSep(tx_updated,tx) - 1 < in.TotCh()) ? out.Ch(tx_updated) + in.ChSep(tx_updated,tx) - 1 : in.TotCh() - 1;
+
+            for(int ch = start; ch <= end; ch++)
+               --satur_mem[tx][ch];
+
+            satur_vec[tx]=std::count_if(satur_mem[tx].begin(),satur_mem[tx].end(),[](int x) {return x != 0;});
+         }
+      }
+   }
+
+
 
 
 
@@ -145,9 +178,6 @@ void BacktrackingMIFAPOpt::GoDownOneLevel()
       int start, end;
       std::vector<unsigned> update_list = in.AdjTxFrom(tx_updated);
 
-      // NEED TO LOAD MEMORY FIRST
-      satur_memory_vector[level] = satur_memory_vector[level - 1];
-
       for(auto tx: update_list)
       {
          if (out.Ch(tx) == -1  && in.ChSep(tx_updated,tx)) //altrimenti è ignorato a priori nel calcolo del DSatur, il sep è per i valori che hanno solo interferenza non li considero che saturano il ch
@@ -156,29 +186,30 @@ void BacktrackingMIFAPOpt::GoDownOneLevel()
             end = (out.Ch(tx_updated) + in.ChSep(tx_updated,tx) - 1 < in.TotCh()) ? out.Ch(tx_updated) + in.ChSep(tx_updated,tx) - 1 : in.TotCh() - 1;
 
             for(int ch = start; ch <= end; ch++)
-               satur_memory_vector[level][tx][ch] = true;
+               ++satur_mem[tx][ch];
+
+            satur_vec[tx]=std::count_if(satur_mem[tx].begin(),satur_mem[tx].end(),[](int x) {return x != 0;});
          }
       }
    }
-   int satur, best_satur, tx_best;
+   int best_satur, tx_best;
    bool first_best_found = false;
    // MAX SAT
    for (size_t tx = 0; tx < in.NetworkSize(); ++tx)
    {
       if (out.Ch(tx) == -1)
       {
-         satur = std::count(satur_memory_vector[level][tx].begin(),satur_memory_vector[level][tx].end(),true);
          if (first_best_found)
          {
-            if(satur > best_satur || (satur == best_satur && in.Degree(tx) > in.Degree(tx_best)))
+            if(satur_vec[tx] > best_satur || (satur_vec[tx] == best_satur && in.Degree(tx) > in.Degree(tx_best)))
             {
-               best_satur = satur;
+               best_satur = satur_vec[tx];
                tx_best = tx;
             }
          }
          else
          {
-            best_satur = satur;
+            best_satur = satur_vec[tx];
             tx_best = tx;
             first_best_found = true;
          }

@@ -11,6 +11,7 @@ class Cost
    friend bool operator>=(const Cost& a,const Cost& b);
    friend bool operator==(const Cost& a,const Cost& b);
    friend Cost operator+(const Cost& a,const Cost& b);
+   friend Cost operator-(const Cost& a,const Cost& b);
 
    public:
       int Hard(void) const {return hard;};
